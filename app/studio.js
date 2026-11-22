@@ -56,8 +56,8 @@
   function startPrompt(prompt) {
     setup({...prompt, minutes:20, lens:'Socratic'});
   }
-  const names={frontiers:"Frontier casebook",studio:"Journey studio",prompts:"Prompt library",dialogue:"Dialogue",journal:"Session journal",insights:"Practice insights",evidence:"Evidence archive",experiments:"Experiments",privacy:"Privacy & support"};
-  const navGroups=[["Workspace",[["studio","studio"],["prompts","feather"],["journal","journal"]]],["Research tools",[["frontiers","compass"],["evidence","book"],["insights","chart"],["experiments","flask"]]]];
+  const names={exchange:"Master prompts",workshop:"Prompt workshop",community:"Conversation commons",connections:"AI connections",room:"AI conversation",frontiers:"Frontier casebook",studio:"Journey studio",prompts:"Prompt library",dialogue:"Dialogue",journal:"Session journal",insights:"Practice insights",evidence:"Evidence archive",experiments:"Experiments",privacy:"Privacy & support"};
+  const navGroups=[["Prompt exchange",[["exchange","book"],["workshop","feather"],["community","message"],["connections","layers"]]],["Workspace",[["studio","studio"],["prompts","feather"],["journal","journal"]]],["Research tools",[["frontiers","compass"],["evidence","book"],["insights","chart"],["experiments","flask"]]]];
   let selectedJourney=null, setupTrigger=null, currentView="", toastTimer, dayTimer;
 
   function notice(message) {
@@ -85,13 +85,18 @@
   function renderPage(shouldFocus=true) {
     const root=byId("workspace");
     const [requested, item]=location.hash.slice(1).split("/");
-    let view=Object.hasOwn(names,requested)?requested:"studio";
+    let view=Object.hasOwn(names,requested)?requested:"exchange";
     if(view==="dialogue"&&!DDL.dialogue?.hasActive()&&currentView!=="dialogue") view="studio";
     if(currentView==="dialogue"&&view!=="dialogue") DDL.dialogue?.pauseForNavigation();
     currentView=view; closeRail(); byId("crumb-view").textContent=names[view];
     document.title=names[view]+" · DeepDialogue Lab"; refreshNav();
     root.replaceChildren(); root.dataset.view=view;
-    if(view==="studio") studio(root);
+    if(view==="exchange") item?DDL.exchange.detail(root,item):DDL.exchange.home(root);
+    else if(view==="workshop") DDL.exchange.workshop(root,item);
+    else if(view==="community") DDL.community.render(root,item);
+    else if(view==="connections") DDL.rooms.connections(root);
+    else if(view==="room") DDL.rooms.room(root,item);
+    else if(view==="studio") studio(root);
     else if(view==="prompts") library(root);
     else if(view==="frontiers") DDL.frontiers.render(root,item,setup);
     else if(view==="dialogue") DDL.dialogue.render(root);
@@ -162,6 +167,7 @@
   }
   document.addEventListener("DOMContentLoaded",()=>{
     byId("crumb-icon").innerHTML=DDL.icon("panel",16);byId("help-icon").innerHTML=DDL.icon("help",18);byId("mobile-nav").innerHTML=DDL.icon("menu");
+    DDL.rooms?.readCallback();
     dateText(); dayTimer=setInterval(dateText,60000);
     byId("mobile-nav").onclick=()=>{const open=document.body.classList.toggle("menu-open");byId("scrim").hidden=!open;byId("mobile-nav").setAttribute("aria-expanded",String(open));if(open)byId("rail").querySelector(".nav-link")?.focus();};
     byId("scrim").onclick=closeRail;

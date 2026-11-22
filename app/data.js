@@ -282,11 +282,19 @@
       const summary = node('summary','',node('span','rec-stack',h('strong','',s.title),h('small','',dateLabel(s.date)+' · '+s.targetMinutes+' min journey · '+conditionName(s.condition))),h('span','rec-expand','Review'));
       const transcript = node('div','rec-detail',h('p','rec-copy',s.turns.length+' transcript turns · '+s.signals.length+' safety events'+(s.rating ? ' · Rating '+s.rating+'/5' : '')));
       const sourceNames=new Map(sources().map(source=>[source.id,source.title]));
-      s.turns.forEach(t => {
+      const chosen=new Set();
+      s.turns.forEach((t,index) => {
         const item=node('article','rec-turn',h('small','', (['user','human'].includes(t.role.toLowerCase()) ? 'You' : t.role)+' · '+(t.tag || 'Dialogue')+(t.lens?' · '+t.lens:'')),h('p','',t.text));
         if(t.sourceIds?.length)item.append(h('small','','Referenced: '+t.sourceIds.map(id=>sourceNames.get(id) || 'Unavailable source').join(' · ')));
+        const check=h('input');check.type='checkbox';check.addEventListener('change',()=>{if(check.checked)chosen.add(index);else chosen.delete(index);});
+        item.append(node('label','rec-meta',check,h('span','',' Include in public draft')));
         transcript.append(item);
       });
+      transcript.append(button('Review selected excerpt',()=>{
+        const excerpt=s.turns.filter((_,i)=>chosen.has(i)).map(t=>(['user','human'].includes(t.role.toLowerCase())?'Participant':'Facilitator')+': '+t.text).join('\n\n');
+        if(!excerpt || excerpt.length>3500){notify('Choose one or more turns totaling at most 3,500 characters.');return;}
+        DDL.community.compose({text:mask(excerpt)});
+      },true));
       if (s.reflection) transcript.append(h('h3','','Closing reflection'),h('p','rec-pre',s.reflection));
       if (s.signals.length) transcript.append(h('h3','','Safety events'),h('p','rec-pre',s.signals.map(s=>typeof s==='string'?s:s.kind+(s.turn?' (turn '+s.turn+')':'')).join(' · ')));
       details.append(summary,transcript); root.append(details);
