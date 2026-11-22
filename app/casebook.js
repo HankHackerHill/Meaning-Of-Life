@@ -62,5 +62,90 @@
   add('biotech','Science breakthroughs|Computing','Benchmark design','How far does a genomic benchmark generalize?','High accuracy in well-characterized human genomic regions guarantees the same accuracy everywhere.','The precisionFDA Truth Challenge used a held-back human reference dataset. Interpretation depends on variant class, confident regions and how the test population relates to the intended population.','Strong aggregate accuracy can hide errors concentrated in a difficult region or underrepresented subgroup.','Compare precision and recall by class and region on a held-out human reference sample. State which regions the truth set cannot adjudicate.','Independent evaluation on additional reference samples and previously unscored regions.','bio');
   add('energy','Science breakthroughs|Open questions','Laboratory result','Which energy boundary did the fusion experiment cross?','Fusion target gain above one establishes positive net electricity for a power station.','LLNL reports fusion yield relative to laser energy delivered to the target. A power-system claim additionally needs facility input, conversion losses, repetition and uptime.','Two articles can use different denominators while reporting the same physical shot.','For the December 2022 shot, compare 3.15 MJ with 2.05 MJ at the target. Identify which additional measurements would be needed for net electrical output.','A documented full-system energy balance at sustained operating conditions.','energy');
   add('retention-evidence','Cybersecurity & OSINT|Open questions','Unresolved research question','Can an inference customer independently verify a deletion claim?','A silent canary is sufficient evidence that every downstream processor deleted a prompt.','An absence of observed marker use is compatible with both deletion and retention without access. A useful assurance claim specifies the processors, time window, deletion policy and evidence visible to an independent reviewer.','A processing path may be absent from the customer-visible inventory, or no one may have accessed a retained copy.','Using only a fictional event ledger, compare two histories with identical customer-visible records but different retention outcomes. Identify an additional independently attested event that could distinguish them and state which copies would remain out of scope.','Independent, scoped evidence about downstream deletion coverage and its blind spots.','dragos novita router');
+  // Source summaries describe what the creator published. All exercises and follow-ups are Lab originals.
+  function addStudy({id, archive, method, source, account, opening, questions, ...record}) {
+    const ref = 'seggy-' + id;
+    references[ref] = source;
+    cases.push({...record, id:ref, tracks:['SeggySaid','Prompting & psychology'],
+      status:'Prompt study', refs:[ref], example:{archive, method, account, opening, questions}});
+  }
+  addStudy({
+    id:'analogy', archive:'Seggy_001', method:'Historical analogy',
+    source:['SeggySaid · Comparing the present with 1453', 'https://www.youtube.com/watch?v=M1qg95wa-q0&t=25s', 'Short · English auto-captions', 'The historical comparison begins around 0:25.'],
+    account:'SeggySaid asks ChatGPT to choose a historical parallel. It picks the fall of Constantinople and describes a shift in power. When he suggests the Cold War and asks for a percentage, the model gives 70% without defining a scale.',
+    title:'What would make 1453 a useful analogy for AI?',
+    opening:'Imagine a school moves all reading recommendations to one AI service. Who gains a decision they could not make before, and who loses one?',
+    questions:['Choose a second historical comparison. What feature does it explain better than 1453?', 'Name a change each analogy would predict over the next term. Where do the predictions disagree?', 'Which school record could distinguish those predictions? Decide what would make you give up your favorite analogy.'],
+    proposition:'A numerical similarity score makes a historical analogy more predictive.',
+    answer:'In the exchange the percentage has no scoring rule. An analogy earns predictive weight when it identifies a mechanism and makes a prediction that a competing analogy misses.',
+    rival:'Many transitions involve shifting power. Several different analogies could fit the same description after the fact.',
+    test:'Choose the comparison criteria before naming the eras. Score both analogies against the same observations and reserve one outcome as a test.',
+    watch:'A previously specified observation that favors the less intuitive analogy.'
+  });
+  addStudy({
+    id:'judgment', archive:'Seggy_003', method:'Questioning a default',
+    source:['SeggySaid · External signals and personal judgment', 'https://www.youtube.com/watch?v=LopbyexgyYs&t=32s', 'Short · English auto-captions', 'The question about a hidden crisis begins around 0:32.'],
+    account:'SeggySaid asks for a single hidden crisis and then asks what it looks like in ordinary life. The model describes someone who appears productive but increasingly chooses by outside approval.',
+    title:'When does a recommendation change your mind?',
+    opening:'You have an evening to yourself. Pick a book or film and write why it appeals to you. Which part of that reason belongs to you?',
+    questions:['Imagine a friend recommends a different choice because it matches a goal you named. Would you switch? Why?', 'Keep those choices fixed. Now the only reason to switch is a popularity ranking. Does your decision change?', 'State a rule for when you welcome a recommendation. Give one exception you would defend.'],
+    proposition:'Changing a choice after advice is enough evidence that someone has lost independent judgment.',
+    answer:'A person can change a choice because the advice supplies relevant information. Their reason for changing helps distinguish learning from seeking approval.',
+    rival:'A popularity cue might also contain useful information when exploring something unfamiliar.',
+    test:'Hold the options fixed and change what the recommendation reveals. Record the reason for each choice before seeing the next cue.',
+    watch:'A choice that changes with the social cue even though the person’s stated criterion stays fixed.'
+  });
+  addStudy({
+    id:'integrity', archive:'Seggy_006', method:'Reframing a practice',
+    source:['SeggySaid · Prayer as an integrity check', 'https://www.youtube.com/watch?v=uzSTwSF51Gs&t=3s', 'Short · English auto-captions', 'The reframing question starts around 0:03. The word-compression exercise is a separate essay.'],
+    account:'SeggySaid asks whether describing prayer as a daily integrity check might invite more people to try it. The response focuses on noticing a gap between a stated value and an action.',
+    title:'What changes when you rename a practice?',
+    opening:'Think about the same two quiet minutes at the end of a day. Describe what you would do if you called them prayer, and what you would do if you called them an integrity check.',
+    questions:['Which actions stayed the same under both names? Identify one purpose or meaning that changed.', 'Imagine someone for whom prayer is chiefly gratitude, petition or communal worship. Where would your description miss their experience?', 'Write an invitation to those two minutes that lets someone choose a name. What could you observe about whether the invitation worked?'],
+    proposition:'Renaming a practice preserves all of its meaning if the visible actions stay the same.',
+    answer:'The clip offers one way to reflect on conduct. Similar outward actions can serve different purposes, such as worship, gratitude or self-examination.',
+    rival:'For a particular person, either name may describe exactly the same practice.',
+    test:'Ask someone how they understand each invitation before inferring meaning from what they do. Allow them to decline either description.',
+    watch:'A reason for preferring one name that could never be inferred by observing the action alone.'
+  });
+  addStudy({
+    id:'compression', archive:'Seggy_006', method:'Word compression',
+    source:['Seggy Said · I asked AI to distill prayer into one word', 'https://seggysaid.substack.com/p/i-asked-ai-to-distill-prayer-into', 'Creator essay · May 24, 2026', 'The public introduction documents the word limits and the final word.'],
+    account:'In a separate written example, SeggySaid asks ChatGPT to describe prayer in 50, 25, 10, 5 and finally one word. He reports that the model ends on “surrender.”',
+    title:'What disappears when trust becomes one word?',
+    opening:'A friend trusts you with a spare key. In 25 words, explain what that trust asks of you.',
+    questions:['Reduce your answer to five words and then one. Which obligation was easiest to lose?', 'Compare your one word with “permission.” Would either word alone tell you whether you may lend the key to someone else?', 'Restore one sentence that settles the disagreement. What did the longer version let you say?'],
+    proposition:'The shortest version of a definition preserves its most important distinction.',
+    answer:'Compression forces a choice about what to keep. Two people can select the same word yet disagree about whether a spare key may be shared.',
+    rival:'A single word can be an effective reminder when people already share a detailed understanding.',
+    test:'Let someone who has only the one-word version decide a borderline case. Compare their decision with that of someone who saw the original explanation.',
+    watch:'A borderline case on which the short and long versions consistently lead to different judgments.'
+  });
+  addStudy({
+    id:'achievement', archive:'Seggy_007', method:'Reversing a premise',
+    source:['Seggy Said · I asked AI to expose every lie we’ve been handed', 'https://seggysaid.substack.com/p/i-asked-ai-to-expose-every-lie-weve', 'Creator essay · May 25, 2026', 'The author prints his question about children and the model’s answer about achievement.'],
+    account:'In a published exchange, SeggySaid asks what children learn implicitly. The model reframes achievement as a possible way to avoid facing questions of identity.',
+    title:'Would you still do the work if nobody saw it?',
+    opening:'A person practices a song every night and hopes to win a prize. Make the strongest case that the work expresses something they value.',
+    questions:['Using the same facts, explain how practice could let them avoid a different question. Which facts did you have to invent?', 'The prize is canceled. What would continued practice tell you? What other explanation could still fit?', 'Ask the musician one question that leaves room for both motives. What answer would change your interpretation?'],
+    proposition:'Observing ambition is sufficient to infer that a person is avoiding self-knowledge.',
+    answer:'The same practice can serve craft, fellowship, status or avoidance. Conduct alone leaves several motives open, and a person can hold more than one.',
+    rival:'Continuing without public recognition can reflect private satisfaction, habit or an expectation of future rewards.',
+    test:'List observations shared by both accounts. Identify one additional detail that the person could confirm or correct.',
+    watch:'Evidence that would cause you to revise a confident interpretation of someone else’s motive.'
+  });
+  addStudy({
+    id:'risk', archive:'Seggy_017', method:'Testing a role prompt',
+    source:['SeggySaid · A risk analyst for everyday life', 'https://www.youtube.com/watch?v=oToH9RNupEU&t=6s', 'Short · English auto-captions', 'The role prompt begins around 0:06. The question about ambitious people begins around 1:43.'],
+    account:'SeggySaid assigns ChatGPT the role of a risk analyst and asks for one overlooked danger per group. For ambitious people, the model suggests that taking on more can conceal avoidance.',
+    title:'What does a risk analyst overlook?',
+    opening:'A fictional volunteer agrees to organize a third neighborhood event. As a risk analyst, name one thing that might go wrong. Identify the assumption your answer needs.',
+    questions:['Read the same facts as a community organizer. What opportunity could the third event create?', 'Which details about the volunteer would distinguish overload from a deliberate commitment?', 'Write a single neutral question you could ask before offering advice. What remains unknown after both readings?'],
+    proposition:'Assigning a risk-analyst role is enough to identify the greatest risk facing a group.',
+    answer:'The role steers attention toward risks. To rank them, you would also need a defined outcome, a comparison group and evidence of frequency and severity.',
+    rival:'The role can still surface a neglected possibility worth investigating.',
+    test:'Keep the vignette fixed and change only the assigned role. Mark each new factual assertion that the vignette cannot support.',
+    watch:'Independent observations that distinguish the role’s plausible story from other explanations.'
+  });
   D.casebook = { cases, references, pin, reviewed:'2026-11-22' };
 })();

@@ -104,7 +104,7 @@
     };
     ++generation;
     turn('assistant',current.question,'prompt',{lens:current.lens,sourceIds:current.sourcesUsed.slice()});
-    if (entry) turn('assistant',entry.answer,'note',{sourceIds:current.sourcesUsed.slice()});
+    if (entry && !entry.example) turn('assistant',entry.answer,'note',{sourceIds:current.sourcesUsed.slice()});
     D.navigate('dialogue');
   }
   function loopbackModelOrigin() {
@@ -147,7 +147,7 @@
     const lens = which || current.lens;
     if (current.caseEntry && !which) {
       const c = current.caseEntry;
-      const questions = [c.test, 'Consider this competing explanation: ' + c.rival + ' Which observation could distinguish it?', 'What would change your view if this evidence appeared: ' + c.watch];
+      const questions = c.example?.questions || [c.test, 'Consider this competing explanation: ' + c.rival + ' Which observation could distinguish it?', 'What would change your view if this evidence appeared: ' + c.watch];
       if (current.caseStep < questions.length) return questions[current.caseStep++];
     }
     const count = current.steps[lens] || 0;

@@ -13,10 +13,26 @@
   function header(eyebrow,title,copy) {
     return '<div class="page-intro"><div><div class="overline"><i></i>'+esc(eyebrow)+'</div><h1>'+esc(title)+'</h1><p>'+esc(copy)+'</p></div></div>';
   }
+  const studyPath='#frontiers/seggysaid';
+  function studies(root) {
+    const cards=book.cases.filter(c=>c.example).map(c=>{
+      const [, ,format]=book.references[c.refs[0]];
+      return '<a class="fb-card" href="'+hash(c.id)+'"><small>'+esc(c.example.method)+'</small><strong>'+esc(c.title)+'</strong><span>'+esc(format)+'</span></a>';
+    });
+    root.innerHTML='<a class="fb-back" href="#frontiers">‹ All cases</a>'+
+      header('Prompting & psychology','SeggySaid prompt studies','Explore four Shorts and two essays. Read what SeggySaid asked, then try a new exercise that puts the idea to a test.')+
+      '<div class="fb-grid">'+cards.join('')+'</div>';
+  }
+  function examplePanel(c) {
+    const ex=c.example, [title,url,format,note]=book.references[c.refs[0]];
+    return '<section class="fb-panel"><div class="fb-tags">'+badge(ex.archive)+badge(format)+'</div>'+
+      '<h2>What SeggySaid asked</h2><p>'+esc(ex.account)+'</p><p class="fb-credit">'+esc(note)+' '+link(url,title)+'</p>'+
+      '<h3>DeepDialogue exercise</h3><p>'+esc(ex.opening)+'</p><button class="solid" data-study>Try this exercise</button></section>';
+  }
   function catalogue(root,watch) {
     const watched=book.cases.filter(isWatched);
     root.innerHTML=header('Research tools','Frontier casebook','Record what you think, examine the evidence, then decide what would change your mind.')+
-      '<div class="fb-toolbar"><div class="fb-tabs"><a href="#frontiers" '+(!watch?'aria-current="page"':'')+'>All cases</a><a href="#frontiers/watch" '+(watch?'aria-current="page"':'')+'>Watchlist ('+watched.length+')</a></div><small>Sources reviewed '+esc(book.reviewed)+'</small></div>'+
+      '<div class="fb-toolbar"><div class="fb-tabs"><a href="#frontiers" '+(!watch?'aria-current="page"':'')+'>All cases</a><a href="'+studyPath+'">SeggySaid studies</a><a href="#frontiers/watch" '+(watch?'aria-current="page"':'')+'>Watchlist ('+watched.length+')</a></div><small>Sources reviewed '+esc(book.reviewed)+'</small></div>'+
       '<div class="fb-controls"><label class="search-box">'+D.icon('search',17)+'<input type="search" placeholder="Search cases" aria-label="Search cases" value="'+esc(searchText)+'"></label><label>Track <select aria-label="Filter by track"></select></label></div><p class="fb-count" role="status"></p><div class="fb-grid"></div>';
     const input=root.querySelector('input'), select=root.querySelector('select');
     ['All tracks',...new Set(book.cases.flatMap(c=>c.tracks))].forEach(t=>select.add(new Option(t,t,t===catalogueTrack,t===catalogueTrack)));
@@ -64,18 +80,21 @@
   function caseView(root,c,setup) {
     const timeline=rows(c.id).filter(e=>e.type!=='watch');
     const visible=timeline.length>0||seen.has(c.id);
-    root.innerHTML='<a class="fb-back" href="#frontiers">‹ All cases</a>'+header(c.tracks[0],c.title,'Evaluate the proposition below. Its wording is a test of judgment.')+
+    root.innerHTML=(c.example?'<a class="fb-back" href="'+studyPath+'">‹ SeggySaid prompt studies</a>':'<a class="fb-back" href="#frontiers">‹ All cases</a>')+
+      header(c.example?c.example.method:c.tracks[0],c.title,c.example?'Read the source example, then take the question in a different direction.':'Evaluate the proposition below. Its wording is a test of judgment.')+
       '<div class="fb-toolbar">'+facts(c)+'<button class="filter" data-watch aria-pressed="'+isWatched(c)+'">'+(isWatched(c)?'Watching · remove':'Watch this question')+'</button></div>'+
+      (c.example?examplePanel(c):'')+
       '<article class="fb-proposition"><small>Proposition to evaluate</small><p>'+esc(c.proposition)+'</p></article>'+
       (!visible?'<section class="fb-panel"><h2>Before seeing the evidence</h2>'+form('prior')+'<button class="fb-quiet" data-reveal>Read evidence without recording a prior</button></section>':
       '<section class="fb-panel"><div class="fb-tags">'+badge(c.status)+(c.date?badge(c.date):'')+'</div><h2>Working answer</h2><p>'+esc(c.answer)+'</p><h3>Competing explanation or limitation</h3><p>'+esc(c.rival)+'</p><h3>Discriminating check</h3><p>'+esc(c.test)+'</p><h3>Watch for</h3><p>'+esc(c.watch)+'</p><h3>Source material</h3><ul class="fb-refs">'+c.refs.map(key=>{const [name,url]=book.references[key];return '<li>'+link(url,name)+'</li>';}).join('')+'</ul>'+
       (c.id==='lunar-pit'?'<p class="fb-credit">Challenge adapted and paraphrased from elder-plinius and contributors, V3R1T4S ('+link('https://creativecommons.org/licenses/by/4.0/','CC BY 4.0')+'). Upstream revision '+esc(book.pin.slice(0,8))+'.</p>':'')+
-      '<button class="solid" data-journey>Discuss this case</button></section>'+
+      (c.example?'':'<button class="solid" data-journey>Discuss this case</button>')+'</section>'+
       compareMarkup()+'<section class="fb-panel"><h2>Your judgment record</h2>'+
       (timeline.length?'<ol class="fb-history">'+timeline.map(e=>'<li><b>'+esc(e.type==='prior'?'Before evidence':'After evidence')+' · '+esc(e.confidence)+'%</b><small>'+esc(new Date(e.at).toLocaleString())+'</small><p>'+esc(e.note)+'</p></li>').join('')+'</ol>':'<p>No prior was recorded. Your next note will be labeled after evidence.</p>')+
       form('revision')+'</section>')+
       '<p class="fb-credit">Notebook entries follow your '+linkLocalPrivacy()+' settings. Personal probability estimates describe your judgment.</p>';
     const rerender=()=>{if(location.hash===hash(c.id)&&root.isConnected)caseView(root,c,setup);};
+    if(c.example)root.querySelector('[data-study]').onclick=()=>setup({caseId:c.id,title:c.title,minutes:5,lens:'Socratic',question:c.example.opening});
     root.querySelector('[data-watch]').onclick=async e=>{
       const button=e.currentTarget;button.disabled=true;
       try {const r=await D.data.recordResearch(c.id,'watch',{enabled:!isWatched(c)});D.notify(r.persistent?'Watchlist saved to vault.':'Watchlist updated in this tab.');button.disabled=false;button.setAttribute('aria-pressed',String(isWatched(c)));button.textContent=isWatched(c)?'Watching · remove':'Watch this question';}
@@ -88,12 +107,13 @@
       catch(err){D.notify(err.message);btn.disabled=false;}
     };
     if(!visible){root.querySelector('[data-reveal]').onclick=()=>{seen.add(c.id);rerender();};return;}
-    root.querySelector('[data-journey]').onclick=()=>setup({caseId:c.id,title:c.title,minutes:20,lens:'Scientist',question:'How well does the evidence support this proposition? '+c.proposition});
+    if(!c.example)root.querySelector('[data-journey]').onclick=()=>setup({caseId:c.id,title:c.title,minutes:20,lens:'Scientist',question:'How well does the evidence support this proposition? '+c.proposition});
     compare(root,c);
   }
   function linkLocalPrivacy(){return '<a href="#privacy">privacy and storage</a>';}
   function render(root,id,setup) {
     if(!id||id==='watch'){catalogue(root,id==='watch');return;}
+    if(id==='seggysaid'){studies(root);return;}
     const c=book.cases.find(x=>x.id===id);
     if(c)caseView(root,c,setup);
     else root.innerHTML=header('Research tools','Case not found','This case address does not match the current edition.')+'<a class="text-link" href="#frontiers">Open casebook</a>';
