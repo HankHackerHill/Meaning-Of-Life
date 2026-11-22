@@ -3,6 +3,8 @@ A full mind expanding lab that has AI and humans pushing each other to lifes mos
 
 ## DeepDialogue Lab
 
+[Open the live master prompt library](https://hackytacky.github.io/Meaning-Of-Life/)
+
 DeepDialogue Lab is a master prompt library and conversation commons. Browse 40 complete prompts, copy one into your preferred AI, remix it in the workshop, or open an in-site model conversation. The guided studio and private journal are available separately.
 
 ### Master prompts and community
