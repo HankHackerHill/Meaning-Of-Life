@@ -91,6 +91,10 @@
     stopClock();
     const minutes = Number(config.minutes);
     const entry = D.casebook.cases.find(item => item.id === config.caseId);
+    const followups = config.followups || entry?.example?.questions || (entry ? [
+      entry.test, 'Consider this competing explanation: ' + entry.rival + ' Which observation could distinguish it?',
+      'What would change your view if this evidence appeared: ' + entry.watch
+    ] : []);
     current = {
       id:window.crypto?.randomUUID?.() || ('session-' + Date.now() + '-' + Math.random().toString(36).slice(2)),
       date:iso(), title:clean(config.title || 'Open reflection').slice(0,240),
@@ -99,7 +103,7 @@
       lens:matchingLens(config.lens), lenses:[matchingLens(config.lens)],
       condition:String(config.condition || 'standard'), stage:'active', turns:[], signals:[],
       rating:null, reflection:'', draft:'', elapsed:0, since:Date.now(), steps:{},
-      caseEntry: entry, caseStep:0, sourceId:'', sourcesUsed:entry ? entry.refs.map(id => 'case-'+id) : [], consent:false, available:null, checked:false, pausedReason:'',
+      followups, askBack:config.askBack, guideIndex:0, useModelGuide:Boolean(config.followups), sourceId:'', sourcesUsed:entry ? entry.refs.map(id => 'case-'+id) : [], consent:false, available:null, checked:false, pausedReason:'',
       saving:false, persistent:false, connectionNotice:'', limitReached:false
     };
     ++generation;
@@ -139,17 +143,13 @@
   }
   function modelControls() {
     return '<section data-dg-provider hidden><div class="dg-rule"></div><h3>Optional local AI</h3>' +
-      '<p class="dg-muted">Enabling AI sends up to 12 recent masked turns, your opening question, journey title, perspective and experiment condition to the model server on this computer when you send a reflection. Masking can miss identifiers.</p>' +
+      '<p class="dg-muted">Enabling AI sends up to 12 recent masked turns, your opening question, the next guided prompt when available, journey title, perspective and experiment condition to the model server on this computer when you send a reflection. Masking can miss identifiers.</p>' +
       btn('Allow local AI for this session','online','dg-secondary') +
       btn('Turn off local AI','offline','dg-secondary') + '</section>';
   }
   function offlineReply(text,which) {
     const lens = which || current.lens;
-    if (current.caseEntry && !which) {
-      const c = current.caseEntry;
-      const questions = c.example?.questions || [c.test, 'Consider this competing explanation: ' + c.rival + ' Which observation could distinguish it?', 'What would change your view if this evidence appeared: ' + c.watch];
-      if (current.caseStep < questions.length) return questions[current.caseStep++];
-    }
+    if (!which && current.guideIndex < current.followups.length) return current.followups[current.guideIndex++];
     const count = current.steps[lens] || 0;
     current.steps[lens] = count + 1;
     const reply = lensPrompts[lens][count % lensPrompts[lens].length];
@@ -262,9 +262,10 @@
     renderView();
     try {
       const turns = session.turns.filter(t => t.role === 'user' || t.tag !== 'break').slice(-12).map(t => ({role:t.role,text:t.text.slice(0,1600)}));
+      const nextQuestion = session.useModelGuide && input !== session.askBack ? session.followups[session.guideIndex] : undefined;
       const res = await fetch(new URL('/api/dialogue',location.origin),{
         method:'POST',referrerPolicy:'same-origin',headers:{'Content-Type':'application/json',Accept:'application/json'},redirect:'error',credentials:'omit',cache:'no-store',
-        signal:controller.signal,body:JSON.stringify({consent:true,turns,lens:session.lens,condition:session.condition,question:session.question,title:session.title})
+        signal:controller.signal,body:JSON.stringify({consent:true,turns,lens:session.lens,condition:session.condition,question:session.question,title:session.title,nextQuestion})
       });
       if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) throw Error('Model unavailable');
       const payload = await res.json();
@@ -285,6 +286,7 @@
       } else {
         const sourceIds = Array.isArray(payload.sourceIds) ? safeSourceList().filter(s => payload.sourceIds.includes(s.id)).map(s => s.id) : [];
         turn('assistant',reply,'model',{lens:session.lens,sourceIds});
+        if (nextQuestion) session.guideIndex++;
       }
     } catch (_) {
       if (pending !== request || session !== current || generation !== marker) return;
@@ -357,10 +359,16 @@
       return '<li class="dg-turn dg-' + (t.role === 'user' ? 'human' : t.tag === 'break' ? 'breaker' : 'guide') + '"><div class="dg-byline"><strong>' + (t.role === 'user' ? 'You' : 'Facilitator') + '</strong><span>' + esc(tagText[t.tag] || t.tag) + (t.lens && t.role === 'assistant' ? ' · ' + esc(t.lens) : '') + '</span></div><p>' + esc(t.text) + '</p>' + refs.map(s => '<small class="dg-source-ref">' + esc(s.status) + ' · ' + esc(s.title) + '</small>').join('') + '</li>';
     }).join('') + '</ol>';
   }
+  function reverseQuestion() {
+    if (!current.askBack) return '';
+    const canInsert=current.consent && current.stage==='active' && !pending;
+    return '<details class="dg-prompt-reverse"><summary>Turn the question around</summary><p>'+esc(current.askBack)+'</p>'+
+      (canInsert?btn('Use this question','insert-question','dg-secondary'):'<small>Try this with a conversation partner or a local model.</small>')+'</details>';
+  }
   function live() {
     const paused = current.stage === 'paused';
     const sources = safeSourceList();
-    return head('Dialogue studio',current.title) + '<div class="dg-columns"><section class="dg-panel dg-conversation"><div class="dg-sessionbar"><span class="dg-label">' + (paused ? 'Paused' : 'In session') + ' · ' + (current.consent ? 'Local model' : 'Guided prompts') + '</span><span class="dg-clock"><span data-dg-time>' + timeLabel(elapsed()) + '</span> / ' + current.targetMinutes + ' min</span></div>' + (current.connectionNotice ? '<p class="dg-status" role="status">' + esc(current.connectionNotice) + '</p>' : '') + '<div class="dg-scroll">' + transcript() + (pending ? '<p class="dg-typing" role="status">Waiting for the local model…</p>' : '') + '</div>' + (paused ? '<div class="dg-pause" role="status"><h2>Take a pause</h2><p>' + esc(current.pausedReason) + '</p><div class="dg-actions">' + btn('Resume dialogue','resume','dg-primary') + btn('Finish & reflect','finish','dg-secondary') + '</div></div>' : '<form class="dg-composer" data-dg-message><label class="dg-label" for="dg-message">Your reflection</label><textarea id="dg-message" data-dg-compose maxlength="1600" rows="3" placeholder="Start with what comes to mind…">' + esc(current.draft) + '</textarea><div class="dg-composer-bar"><span>Leave out identifying details.</span><button class="dg-btn dg-primary" type="submit" ' + (pending ? 'disabled' : '') + '>Send reflection</button></div></form>') + '</section><div class="dg-aside"><section class="dg-panel dg-tools"><h2>Session tools</h2><label class="dg-label" for="dg-lens">Perspective</label><select id="dg-lens" data-dg-lens ' + (lensLocked() || paused || pending ? 'disabled' : '') + '>' + Object.keys(lenses).map(l => '<option ' + (current.lens === l ? 'selected' : '') + '>' + esc(l) + '</option>').join('') + '</select><small>' + (lensLocked() ? 'This experiment uses one perspective.' : esc(lenses[current.lens]) + '.') + '</small>' + (sources.length ? '<label class="dg-label" for="dg-source">Evidence & hypotheses</label><select id="dg-source" data-dg-source ' + (paused || pending ? 'disabled' : '') + '><option value="">Bring in a source…</option>' + sources.map(s => '<option value="' + esc(s.id) + '">' + esc(s.title) + '</option>').join('') + '</select>' : '') + '<div class="dg-rule"></div>' + modelControls() + (!paused ? btn('Pause & reconsider','pause','dg-secondary') + btn('Finish & reflect','finish','dg-link') : '') + (!current.turns.some(t => t.role === 'user') ? btn('Leave empty journey','abandon','dg-link',current.draft.trim() ? 'hidden' : '') : '') + '</section>' + notice() + '</div></div>';
+    return head('Dialogue studio',current.title) + '<div class="dg-columns"><section class="dg-panel dg-conversation"><div class="dg-sessionbar"><span class="dg-label">' + (paused ? 'Paused' : 'In session') + ' · ' + (current.consent ? 'Local model' : 'Guided prompts') + '</span><span class="dg-clock"><span data-dg-time>' + timeLabel(elapsed()) + '</span> / ' + current.targetMinutes + ' min</span></div>' + (current.connectionNotice ? '<p class="dg-status" role="status">' + esc(current.connectionNotice) + '</p>' : '') + '<div class="dg-scroll">' + transcript() + (pending ? '<p class="dg-typing" role="status">Waiting for the local model…</p>' : '') + '</div>' + (paused ? '<div class="dg-pause" role="status"><h2>Take a pause</h2><p>' + esc(current.pausedReason) + '</p><div class="dg-actions">' + btn('Resume dialogue','resume','dg-primary') + btn('Finish & reflect','finish','dg-secondary') + '</div></div>' : '<form class="dg-composer" data-dg-message><label class="dg-label" for="dg-message">Your reflection</label><textarea id="dg-message" data-dg-compose maxlength="1600" rows="3" placeholder="Start with what comes to mind…">' + esc(current.draft) + '</textarea><div class="dg-composer-bar"><span>Leave out identifying details.</span><button class="dg-btn dg-primary" type="submit" ' + (pending ? 'disabled' : '') + '>Send reflection</button></div></form>') + '</section><div class="dg-aside"><section class="dg-panel dg-tools"><h2>Session tools</h2><label class="dg-label" for="dg-lens">Perspective</label><select id="dg-lens" data-dg-lens ' + (lensLocked() || paused || pending ? 'disabled' : '') + '>' + Object.keys(lenses).map(l => '<option ' + (current.lens === l ? 'selected' : '') + '>' + esc(l) + '</option>').join('') + '</select><small>' + (lensLocked() ? 'This experiment uses one perspective.' : esc(lenses[current.lens]) + '.') + '</small>' + (sources.length ? '<label class="dg-label" for="dg-source">Evidence & hypotheses</label><select id="dg-source" data-dg-source ' + (paused || pending ? 'disabled' : '') + '><option value="">Bring in a source…</option>' + sources.map(s => '<option value="' + esc(s.id) + '">' + esc(s.title) + '</option>').join('') + '</select>' : '') + reverseQuestion() + '<div class="dg-rule"></div>' + modelControls() + (!paused ? btn('Pause & reconsider','pause','dg-secondary') + btn('Finish & reflect','finish','dg-link') : '') + (!current.turns.some(t => t.role === 'user') ? btn('Leave empty journey','abandon','dg-link',current.draft.trim() ? 'hidden' : '') : '') + '</section>' + notice() + '</div></div>';
   }
   function summary() {
     const complete = current.stage === 'complete';
@@ -372,6 +380,14 @@
     const action = event.target.closest('[data-dg]')?.dataset.dg;
     if (!action) return;
     if (action === 'home') return D.navigate('studio');
+    if (action === 'insert-question' && current.askBack && current.consent && !pending && current.stage==='active') {
+      const editor=view.querySelector('[data-dg-compose]');
+      if (editor.value.trim()) { D.notify('Send or clear your draft before inserting another question.'); return; }
+      editor.value=current.askBack;
+      editor.dispatchEvent(new Event('input',{bubbles:true}));
+      editor.focus();
+      return;
+    }
     if (action === 'journal') return D.navigate('journal');
     if (action === 'privacy') return D.navigate('privacy');
     if (action === 'abandon' && !current.turns.some(t => t.role === 'user') && !current.draft.trim()) {

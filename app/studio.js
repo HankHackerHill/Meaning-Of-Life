@@ -39,7 +39,7 @@
     {name:"Perspective shift",minutes:20,tone:"sage",image:"orbit",desc:"Examine a familiar belief through a different lens.",question:"What belief might look different from another point of view?",lens:"Skeptic"},
     {name:"Deep inquiry",minutes:45,tone:"lilac",image:"wave",desc:"Follow a difficult question through evidence and alternatives.",question:"Which assumption sits beneath a decision that matters to you?",lens:"Scientist"}
   ];
-  const prompts = [
+  const starters = [
     ["Meaning & purpose","What gives a life its meaning?","Can a life be meaningful even when no one remembers it? Think of a moment whose value did not depend on recognition."],
     ["Human behavior","When does a habit become part of who you are?","Choose a routine you repeat. What would changing it reveal about the person you believe yourself to be?"],
     ["Mind & machine","What would count as being understood by a machine?","Think of a reply that felt insightful. What observable signs could distinguish understanding from a convincing imitation?"],
@@ -52,7 +52,10 @@
     ["Human behavior","What does changing your mind look like from the inside?","Recall a time your view shifted gradually. Which observation first made the old explanation less satisfying?"],
     ["Mind & machine","Can an answer be useful for the wrong reason?","Imagine a system that gives helpful advice with a faulty explanation. Which part could you test independently?"],
     ["Beliefs & evidence","Which explanation have you ruled out too quickly?","Pick one recent decision. What alternative did you dismiss, and how could you give it a fair test?"]
-  ];
+  ].map(([topic,title,question]) => ({topic,title,question}));
+  function startPrompt(prompt) {
+    setup({...prompt, minutes:20, lens:'Socratic'});
+  }
   const names={frontiers:"Frontier casebook",studio:"Journey studio",prompts:"Prompt library",dialogue:"Dialogue",journal:"Session journal",insights:"Practice insights",evidence:"Evidence archive",experiments:"Experiments",privacy:"Privacy & support"};
   const navGroups=[["Workspace",[["studio","studio"],["prompts","feather"],["journal","journal"]]],["Research tools",[["frontiers","compass"],["evidence","book"],["insights","chart"],["experiments","flask"]]]];
   let selectedJourney=null, setupTrigger=null, currentView="", toastTimer, dayTimer;
@@ -108,39 +111,43 @@
     const now=new Date();
     const day=Math.floor(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate())/86400000);
     const base=Math.floor(Date.UTC(2026,10,22)/86400000);
+    const prompts=starters.concat(DDL.conversations);
     return prompts[((day-base)%prompts.length+prompts.length)%prompts.length];
   }
   function studio(root) {
     const daily=dailyPrompt(), sessions=DDL.data.sessions()||[];
     root.innerHTML='<div class="page-intro"><div><div class="overline"><i></i> Personal workspace</div><h1>Journey studio</h1><p>Explore a question, challenge a belief, or find a different perspective.</p></div></div>'+
       (DDL.dialogue.hasActive()?'<div class="resume-strip">'+DDL.icon("message")+'<span>You have a journey in progress.</span><button data-go="dialogue">Resume dialogue</button></div>':'')+
-      '<article class="hero"><div class="hero-art" aria-hidden="true"></div><div class="hero-content"><div class="hero-label">'+DDL.icon("sun",16)+' Daily inquiry</div><h2>'+escape(daily[1])+'</h2><div class="hero-bottom"><button class="hero-button" data-daily>'+DDL.icon("play",15)+' Explore this question</button><span>'+DDL.icon("clock",15)+' 20 min</span></div></div></article>'+
+      '<article class="hero"><div class="hero-art" aria-hidden="true"></div><div class="hero-content"><div class="hero-label">'+DDL.icon("sun",16)+' Daily inquiry</div><h2>'+escape(daily.title)+'</h2><div class="hero-bottom"><button class="hero-button" data-daily>'+DDL.icon("play",15)+' Explore this question</button><span>'+DDL.icon("clock",15)+' 20 min</span></div></div></article>'+
       '<section class="choose-section" aria-labelledby="choose-title"><div class="section-heading"><div><div class="overline"><i></i> Guided practice</div><h2 id="choose-title">Choose a journey</h2></div><a class="text-link" href="#prompts">Browse prompts '+DDL.icon("chevron",15)+'</a></div>'+
       '<div class="journey-grid">'+journeys.map((j,i)=>'<button class="journey-card '+j.tone+'" data-journey="'+i+'"><span class="card-visual"><img src="./app/'+j.image+'.svg" alt=""><span class="time-chip">'+DDL.icon("clock",13)+j.minutes+' min</span></span><span class="card-copy"><strong>'+j.name+'</strong><span>'+j.desc+'</span></span></button>').join("")+'</div></section>'+
       '<div class="resume-strip">'+DDL.icon("feather")+'<span>SeggySaid prompt studies</span><a class="text-link" href="#frontiers/seggysaid">Explore the examples '+DDL.icon("chevron",15)+'</a></div>'+
       '<section class="practice-section" aria-labelledby="practice-title"><div class="section-heading"><div><div class="overline"><i></i> Session journal</div><h2 id="practice-title">Recent reflections</h2></div><a class="text-link" href="#journal">Open journal '+DDL.icon("chevron",15)+'</a></div>'+
       (sessions.length?'<div class="recent-list">'+sessions.slice(0,3).map(s=>'<a href="#journal">'+DDL.icon("journal")+'<b>'+escape(s.title)+'</b><small>'+escape(new Date(s.date).toLocaleDateString())+'</small>'+DDL.icon("chevron",14)+'</a>').join("")+'</div>':
       '<div class="journal-empty">'+DDL.icon("journal",23)+'<span><strong>'+ (DDL.data.vaultState?.()==="locked"?"Your journal is locked":"Your journal starts here")+'</strong><small>'+ (DDL.data.vaultState?.()==="locked"?"Unlock your vault in Privacy to review saved journeys.":"Completed journeys appear here for review.")+'</small></span></div>')+'</section>';
-    root.querySelector("[data-daily]").onclick=()=>setup({title:daily[1],question:daily[2],minutes:20,lens:"Socratic"});
+    root.querySelector("[data-daily]").onclick=()=>startPrompt(daily);
     root.querySelectorAll("[data-journey]").forEach(btn=>btn.onclick=()=>setup({title:journeys[+btn.dataset.journey].name,...journeys[+btn.dataset.journey]}));
   }
   function library(root) {
-    root.innerHTML='<div class="page-intro"><div><div class="overline"><i></i> Guided practice</div><h1>Prompt library</h1><p>Start with a question from the collection, or write one of your own.</p></div></div><div class="library-tools"><label class="search-box">'+DDL.icon("search")+'<input type="search" placeholder="Search prompts" aria-label="Search prompts"></label><button class="solid" id="custom-prompt">Write a question</button></div><div class="filters" role="group" aria-label="Prompt topic"></div><div class="prompt-list"></div>';
+    const prompts=DDL.conversations.concat(starters);
+    root.innerHTML='<div class="page-intro"><div><div class="overline"><i></i> Guided practice</div><h1>Prompt library</h1><p>Explore a guided conversation, start with a single question, or write your own.</p></div></div><div class="library-tools"><label class="search-box">'+DDL.icon("search")+'<input type="search" placeholder="Search prompts" aria-label="Search prompts"></label><button class="solid" id="custom-prompt">Write a question</button></div><div class="filters" role="group" aria-label="Prompt topic"></div><p class="fb-count" role="status"></p><div class="prompt-list"></div>';
     let selected="All topics";
     const filters=root.querySelector(".filters"), container=root.querySelector(".prompt-list"), field=root.querySelector("input");
     function update() {
-      filters.innerHTML=["All topics",...new Set(prompts.map(p=>p[0]))].map(c=>'<button class="filter" aria-pressed="'+(c===selected)+'" data-filter="'+escape(c)+'">'+escape(c)+'</button>').join("");
-      const matches=prompts.map((p,i)=>({p,i})).filter(({p})=>(selected==="All topics"||p[0]===selected)&&p.join(" ").toLowerCase().includes(field.value.toLowerCase().trim()));
-      container.innerHTML=matches.length?matches.map(({p,i})=>'<button class="prompt-item" data-prompt="'+i+'"><span class="prompt-kicker">'+escape(p[0])+'</span><strong>'+escape(p[1])+'</strong><span>'+escape(p[2])+'</span></button>').join(""):'<p class="no-results" role="status">No prompts match. Try a different topic or search term.</p>';
+      filters.innerHTML=["All topics",...new Set(prompts.map(p=>p.topic))].map(c=>'<button class="filter" aria-pressed="'+(c===selected)+'" data-filter="'+escape(c)+'">'+escape(c)+'</button>').join("");
+      const matches=prompts.map((p,i)=>({p,i})).filter(({p})=>(selected==="All topics"||p.topic===selected)&&[p.topic,p.title,p.question].join(" ").toLowerCase().includes(field.value.toLowerCase().trim()));
+      root.querySelector(".fb-count").textContent=matches.length+(matches.length===1?" prompt":" prompts");
+      container.innerHTML=matches.length?matches.map(({p,i})=>'<button class="prompt-item" data-prompt="'+i+'"><span class="prompt-kicker">'+escape(p.topic)+(p.followups?' · Guided conversation':' · Starter')+'</span><strong>'+escape(p.title)+'</strong><span>'+escape(p.question)+'</span></button>').join(""):'<p class="no-results" role="status">No prompts match. Try a different topic or search term.</p>';
     }
     filters.onclick=e=>{const button=e.target.closest("[data-filter]");if(button){selected=button.dataset.filter;update();Array.from(filters.children).find(x=>x.dataset.filter===selected)?.focus();}};
-    container.onclick=e=>{const button=e.target.closest("[data-prompt]");if(button){const p=prompts[+button.dataset.prompt];setup({title:p[1],question:p[2],minutes:20,lens:"Socratic"});}};
+    container.onclick=e=>{const button=e.target.closest("[data-prompt]");if(button)startPrompt(prompts[Number(button.dataset.prompt)]);};
     field.oninput=update; byId("custom-prompt").onclick=()=>setup({title:"Personal inquiry",question:"",minutes:20,lens:"Socratic"}); update();
   }
   function setup(journey) {
     if(DDL.dialogue.hasActive()){DDL.navigate("dialogue");notice("Resume or finish your current journey before starting another.");return;}
     const dialog=byId("setup"); selectedJourney={...journey}; setupTrigger=document.activeElement;
-    dialog.innerHTML='<form id="setup-form"><div class="setup-head"><span class="overline"><i></i> Session setup</span><button type="button" class="icon-button" aria-label="Close session setup" data-close>'+DDL.icon("x",18)+'</button></div><h2 id="setup-title">'+escape(journey.title)+'</h2><label class="field-label" for="start-question">Opening question</label><textarea id="start-question" maxlength="500" placeholder="What would you like to examine?" required>'+escape(journey.question)+'</textarea><fieldset><legend>Time to explore</legend><div class="duration-options">'+[5,20,45].map(n=>'<label><input type="radio" name="minutes" value="'+n+'" '+(journey.minutes===n?"checked":"")+'><span>'+n+' min</span></label>').join("")+'</div></fieldset><label class="field-label" for="start-lens">Starting perspective</label><select id="start-lens">'+["Socratic","Skeptic","Scientist","Supportive"].map(l=>'<option '+(l===journey.lens?"selected":"")+'>'+l+'</option>').join("")+'</select><p class="setup-note">'+DDL.icon("shield",17)+'<span>Starts with guided prompts on this device. You choose whether to connect a model during the session. Avoid identifying details.</span></p><button type="submit" class="solid full">'+DDL.icon("play",16)+' Begin journey</button></form>';
+    const reading=journey.reading?'<p class="setup-note"><a class="text-link" target="_blank" rel="noopener noreferrer" href="'+escape(journey.reading[1])+'">'+escape(journey.reading[0])+'</a></p>':'';
+    dialog.innerHTML='<form id="setup-form"><div class="setup-head"><span class="overline"><i></i> Session setup</span><button type="button" class="icon-button" aria-label="Close session setup" data-close>'+DDL.icon("x",18)+'</button></div><h2 id="setup-title">'+escape(journey.title)+'</h2><label class="field-label" for="start-question">Opening question</label><textarea id="start-question" maxlength="500" placeholder="What would you like to examine?" required>'+escape(journey.question)+'</textarea>'+reading+'<fieldset><legend>Time to explore</legend><div class="duration-options">'+[5,20,45].map(n=>'<label><input type="radio" name="minutes" value="'+n+'" '+(journey.minutes===n?"checked":"")+'><span>'+n+' min</span></label>').join("")+'</div></fieldset><label class="field-label" for="start-lens">Starting perspective</label><select id="start-lens">'+["Socratic","Skeptic","Scientist","Supportive"].map(l=>'<option '+(l===journey.lens?"selected":"")+'>'+l+'</option>').join("")+'</select><p class="setup-note">'+DDL.icon("shield",17)+'<span>Starts with guided prompts on this device. You choose whether to connect a model during the session. Avoid identifying details.</span></p><button type="submit" class="solid full">'+DDL.icon("play",16)+' Begin journey</button></form>';
     dialog.querySelector("[data-close]").onclick=()=>dialog.close();
     dialog.onclick=e=>{if(e.target===dialog){const b=dialog.getBoundingClientRect();if(e.clientX<b.left||e.clientX>b.right||e.clientY<b.top||e.clientY>b.bottom)dialog.close();}};
     dialog.onclose=()=>{if(setupTrigger?.isConnected)setupTrigger.focus();};
@@ -148,7 +155,7 @@
       e.preventDefault();const input=byId("start-question");const question=DDL.data.mask(input.value.trim());
       if(!question){input.setCustomValidity("Enter a question to start.");input.reportValidity();return;}
       const exp=DDL.data.experimentCondition?.()||{}, lens=byId("start-lens").value;
-      const options={caseId:selectedJourney.caseId,title:selectedJourney.title,question,minutes:Number(new FormData(e.target).get("minutes")),lens:exp.condition&&exp.condition!=="standard"?(exp.lens||lens):lens,condition:exp.condition||"standard"};
+      const options={askBack:selectedJourney.askBack,followups:selectedJourney.followups,caseId:selectedJourney.caseId,title:selectedJourney.title,question,minutes:Number(new FormData(e.target).get("minutes")),lens:exp.condition&&exp.condition!=="standard"?(exp.lens||lens):lens,condition:exp.condition||"standard"};
       dialog.close();DDL.dialogue.start(options);
     };
     byId("start-question").oninput=e=>e.target.setCustomValidity(""); dialog.showModal();
