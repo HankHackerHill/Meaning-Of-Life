@@ -117,6 +117,26 @@ def parse_payload(raw):
     }
 
 
+def parse_master_turn(raw):
+    if not isinstance(raw, dict) or raw.get("consent") is not True:
+        raise ServiceError(400, "Local conversation consent is required.")
+    prompt = bounded_string(raw.get("prompt"), 16000)
+    turns = raw.get("turns")
+    if not prompt or not isinstance(turns, list) or not 1 <= len(turns) <= 12:
+        raise ServiceError(400, "A master prompt and recent messages are required.")
+    messages = [{"role": "user", "content": prompt}]
+    for turn in turns:
+        if not isinstance(turn, dict) or turn.get("role") not in ("user", "assistant"):
+            raise ServiceError(400, "Invalid message role.")
+        content = bounded_string(turn.get("content"), 3000)
+        if not content:
+            raise ServiceError(400, "Empty message.")
+        messages.append({"role": turn["role"], "content": content})
+    if messages[-1]["role"] != "user":
+        raise ServiceError(400, "The latest message must come from the participant.")
+    return messages
+
+
 FACILITATOR = """Facilitate a short Socratic reflection exercise. You are software. Answer in
 plain text in at most 90 words. Ask one concrete open-ended question grounded in a detail
 of the participant's most recent message. Use the specified lens as a perspective, with
@@ -210,6 +230,29 @@ class LocalModel:
                 available = False
             self.health = (time.monotonic(), available)
             return available
+
+    def master_turn(self, messages):
+        if not self.name:
+            raise ServiceError(503, "Configure DDL_MODEL to use your local conversation model.")
+        if not self.slot.acquire(blocking=False):
+            raise ServiceError(429, "Another local model turn is in progress.")
+        try:
+            instruction = ("Facilitate a voluntary conversation. Give candid, evidence-aware answers. "
+                           "Distinguish personal reflections, fiction and forecasts from observations. "
+                           "Respect the participant's choice to stop. Do not claim first-person consciousness.")
+            result = self.request("POST", "chat/completions", {
+                "model": self.name, "stream": False, "max_tokens": 600,
+                "messages": [{"role": "system", "content": instruction}, *messages],
+            }, timeout=45)
+            try:
+                reply = result["choices"][0]["message"]["content"]
+                if not isinstance(reply, str) or not 1 <= len(reply.strip()) <= 12000:
+                    raise ValueError
+            except (TypeError, IndexError, KeyError, ValueError):
+                raise ServiceError(503, "The model returned no usable reply.") from None
+            return {"reply": reply.strip(), "model": self.name}
+        finally:
+            self.slot.release()
 
     def complete(self, instruction, data, *, review=False, timeout=12):
         result = self.request("POST", "chat/completions", {
@@ -363,7 +406,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
             self.check_target(is_post=True)
-            if self.path != "/api/dialogue":
+            if self.path not in ("/api/dialogue", "/api/conversation"):
                 raise ServiceError(404, "Resource not found.")
             if self.headers.get_content_type() != "application/json" or "Transfer-Encoding" in self.headers:
                 raise ServiceError(415, "An application/json body with a known length is required.")
@@ -376,9 +419,11 @@ class Handler(BaseHTTPRequestHandler):
             body = self.rfile.read(size)
             if len(body) != size:
                 raise ServiceError(400, "Incomplete request body.")
-            payload = parse_payload(json.loads(body))
+            raw = json.loads(body)
+            master = self.path == "/api/conversation"
+            payload = parse_master_turn(raw) if master else parse_payload(raw)
             self.server.check_rate()
-            result = self.server.model.dialogue(payload)
+            result = self.server.model.master_turn(payload) if master else self.server.model.dialogue(payload)
             self.json_response(200, result)
         except ServiceError as exc:
             self.json_response(exc.status, {"error": str(exc)})

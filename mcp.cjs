@@ -20,11 +20,21 @@ function session(){
     }
     if(method==='ping')return result(id,{});
     if(!initialized)return error(id,-32002,'Initialize the session first');
-    if(method==='prompts/list')return result(id,{prompts:catalogue.map(p=>({name:p.id,title:p.title,description:p.topic+' · '+p.method}))});
+    if(method==='prompts/list'){
+      const cursor=params.cursor??'0';
+      if(typeof cursor!=='string'||!/^\d{1,5}$/.test(cursor)||Number(cursor)>=catalogue.length)return error(id,-32602,'Invalid catalogue cursor');
+      const start=Number(cursor),end=start+60;
+      const prompts=catalogue.slice(start,end).map(p=>({name:p.id,title:p.title+' · '+p.size,description:p.topic+' · '+p.size,
+        arguments:[{name:'prior_answer',description:'Optional earlier answer to continue from in this version.'}]}));
+      return result(id,{prompts,...(end<catalogue.length?{nextCursor:String(end)}:{})});
+    }
     if(method==='prompts/get'){
       const p=find(params.name);
       if(!p)return error(id,-32602,'Unknown prompt');
-      return result(id,{description:p.title,messages:[{role:'user',content:{type:'text',text:render(p)}}]});
+      const prior=params.arguments?.prior_answer??'';
+      if(typeof prior!=='string'||prior.length>8000)return error(id,-32602,'Invalid earlier answer');
+      const text=render(p)+(prior.trim()?'\n\nContinue from my previous answer without restarting:\n'+prior.trim():'');
+      return result(id,{description:p.title,messages:[{role:'user',content:{type:'text',text}}]});
     }
     return error(id,-32601,'Method not found');
   };

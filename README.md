@@ -5,21 +5,23 @@ A full mind expanding lab that has AI and humans pushing each other to lifes mos
 
 [Open the live master prompt library](https://hackytacky.github.io/Meaning-Of-Life/)
 
-DeepDialogue Lab is a master prompt library and conversation commons. Browse 40 complete prompts, copy one into your preferred AI, remix it in the workshop, or open an in-site model conversation. The guided studio and private journal are available separately.
+DeepDialogue Lab is a master prompt library and conversation commons. Browse 540 conversation prompts and 30 creative writing prompts, copy one into your preferred AI, remix it in the workshop, or open an in-site model conversation. The guided studio and private journal are available separately.
 
 ### Master prompts and community
 
-The home page opens the master prompt collection. Four featured original scripts use a translation hearing, future archaeology, a telescope-time hearing and a pair of counterfactual letters. Another 36 scripts develop the earlier conversations into multi-turn investigations. Each includes an opening scene, a method, competing interpretations, questions the human can ask back and a concrete artifact to create together.
+Each of the 19 categories has ten short, ten medium and ten long prompts. Five ideas in each category have three connected editions. Another five per length are independent originals. The 40 earlier master prompts retain their links as long editions. The main library contains 18 nonfiction categories. **Fiction studio** holds the 19th category and the clearly labeled fictional dialogue examples.
+
+Start with the short year-2100 question, or select a topic and length. On a prompt page, choose a stance, voice, level of challenge, opening move, perspective or one-line ending. Defaults preserve the original text. Source links can be added to a copy. A reader can start fresh, copy a continuation with their own earlier answer, or change length inside a live room with its conversation history. The built-in prompt texts are instructions for a model. Written workbook exercises carry their own byline.
 
 Open **Prompt workshop** to write a new master or change an existing one. Preview and copy the entire result. Workshop drafts and API rooms live in the current tab. Copy a draft you want to keep before refreshing.
 
-In **Conversation commons**, contributors can publish an excerpt, share a complete remix, propose a discovery question or recruit collaborators. Open a thread to read replies, reply on GitHub, or build a related contribution. Remixes can retain a source prompt and parent issue number. Every curated prompt links to its own conversations. Open a shared master to copy it or use it in an AI room, and follow its parent thread to see how it evolved. Three fictional example dialogues demonstrate how the exchange can unfold. The public feed reads matching open GitHub Issues in this repository. Writing and replying use the contributor’s own GitHub account. Moderators can close or lock issues on GitHub. Public reads are subject to GitHub rate limits and search indexing delays.
+In **Conversation commons**, contributors can publish an excerpt, share a complete remix, propose a discovery question or recruit collaborators. Open a thread to read replies, reply on GitHub, or build a related contribution. Remixes can retain a source prompt and parent issue number. Every curated prompt links to its own conversations. Open a shared master to copy it or use it in an AI room, and follow its parent thread to see how it evolved. On a prompt’s conversation page, readers can compare two public submissions and optionally write a private answer before revealing them. “I built something from this” collects contributor-reported projects. Remix notes can record the change, intent, and model used. The public feed reads matching open GitHub Issues in this repository. Writing and replying use the contributor’s own GitHub account. Identified GitHub bot accounts are filtered from threads and replies. Maintainers can moderate spam and scams on GitHub. Community posts are subject to GitHub’s acceptable-use policies. Public reads are subject to GitHub rate limits and search indexing delays.
 
 The app opens a public post for review only after you select the content and approve the preview. Long posts use a copy-and-paste handoff to the GitHub editor. Nothing enters the public feed until a contributor publishes on GitHub. The private journal and the API room both support sharing selected turns.
 
 ### AI connections
 
-**Browser API chat.** Open a master prompt, select **Talk here**, and connect your own OpenRouter account. Authorization uses S256 PKCE in a separate tab. Keep the initiating tab open. The returned key stays in memory and can be disconnected in the app or revoked at OpenRouter. The default model is `openrouter/free`; entering another model ID can consume credit. Each deliberate send includes the master prompt and up to 12 recent messages. Provider availability, routing and data handling depend on the account and model. Use an HTTPS site or localhost.
+**Browser API chat.** Open a master prompt, select **Talk here**, and connect your own OpenRouter account. Use an existing OpenRouter API key in memory or authorize with S256 PKCE in a separate tab. Keep the initiating tab open. The returned key stays in memory and can be disconnected in the app or revoked at OpenRouter. The default model is `openrouter/free`; entering another model ID can consume credit. Each deliberate send includes the master prompt and up to 12 recent messages. Provider availability, routing and data handling depend on the account and model. Use an HTTPS site or localhost.
 
 **MCP.** Clients supporting MCP prompts over stdio can use this dependency-free Node.js 18+ server. Configure the absolute path to your checkout. Client configuration layouts vary.
 
@@ -34,9 +36,9 @@ The app opens a public post for review only after you select the content and app
 }
 ```
 
-Use the client’s prompt picker, or call `prompts/list` and `prompts/get` with a name such as `last-translator`. The server exposes the same 40 public prompt texts as the website. Your MCP client supplies inference. The prompt server does not access accounts, journals or the network.
+Use the client’s prompt picker, or call `prompts/list` and `prompts/get` with a name such as `last-translator`. The server exposes all 570 public prompt texts. Follow the next cursor from each page of 60 prompts. An optional prior_answer argument carries the participant’s earlier answer into a continuation. Your MCP client supplies inference. The prompt server does not access accounts, journals or the network.
 
-**Local inference.** The Python server also supports the existing loopback model in the guided journey studio. See the local model section below.
+**Local inference.** Serve the app with the included Python server. In any master prompt room choose **Local model** to use the OpenAI-compatible model configured by the operator, including a custom or fine-tuned model. The master room sends the master prompt and recent history to the loopback endpoint. Guided journeys also support local inference. See the local model section below.
 
 ### Run
 
