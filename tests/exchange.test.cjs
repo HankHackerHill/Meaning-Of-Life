@@ -107,3 +107,70 @@ test('tab authorization validates state and PKCE; model receives a turn only aft
   nodes.get('[data-act=disconnect]').click();
   assert.match(root.innerHTML,/Disconnected in this tab/);
 });
+
+test('a prompt feed matches only source metadata and keeps the source in the next contribution',async()=>{
+  const nodes=new Map();
+  function element(selector){
+    if(!nodes.has(selector))nodes.set(selector,{querySelector:element,insertAdjacentHTML(){},addEventListener(){}});
+    return nodes.get(selector);
+  }
+  const root={querySelector:element}, calls=[];
+  const X={intro:(_,title)=>title,link:(label,href)=>label+' '+href,btn:String,body:masters.render};
+  const DDL={exchange:X,masters,escape:String};
+  const env={window:{DDL},location:{},AbortSignal,fetch:async url=>{
+    calls.push(new URL(url));
+    function issue(number,base,excerpt){
+      return {number,state:'open',title:'[DeepDialogue] Member '+number,body:DDL.community.format({kind:'Conversation',base,text:excerpt,question:'What next?'})};
+    }
+    return {ok:true,json:async()=>({total_count:2,items:[
+      issue(5,'last-translator','A different reading'),
+      issue(6,'quiet-machine','Quoted from a different thread:\nPrompt: last-translator')
+    ]})};
+  }};
+  vm.runInNewContext(readFileSync(file('app/community.js'),'utf8'),env);
+  DDL.community.render(root,'prompt-last-translator');
+  await new Promise(setImmediate);
+  assert.match(calls[0].searchParams.get('q'),/in:body "Prompt: last-translator"/);
+  assert.match(element('[data-threads]').innerHTML,/Member 5/);
+  assert.doesNotMatch(element('[data-threads]').innerHTML,/Member 6/);
+  element('[data-act=new]').onclick();
+  assert.equal(env.location.hash,'community/new');
+  const fields=Object.fromEntries(['kind','title','text','question','script'].map(k=>[k,{value:''}]));
+  const preview={replaceChildren(){},querySelector:()=>({}),scrollIntoView(){}};
+  const form={elements:fields};
+  const composer={querySelector:key=>key==='form'?form:preview};
+  DDL.data={mask:String};env.URL=URL;
+  DDL.community.render(composer,'new');
+  fields.title.value='Museum';fields.text.value='Two readings';fields.question.value='Who chooses?';
+  form.onsubmit({preventDefault(){}});
+  assert.match(preview.innerHTML,/Prompt: last-translator/);
+  DDL.community.render(root,'prompt-missing');
+  assert.match(root.innerHTML,/Prompt unavailable/);
+  assert.equal(calls.length,1);
+});
+
+test('a published original can be opened, copied and remixed with the source issue intact',async()=>{
+  const nodes=new Map();
+  function element(selector){
+    if(!nodes.has(selector))nodes.set(selector,{querySelector:element,addEventListener(t,listener){this[t]=listener;}});
+    return nodes.get(selector);
+  }
+  const root={querySelector:element},location={},DDL={masters,escape:String};
+  const env={window:{DDL},location,AbortSignal,fetch:async()=>({ok:true,json:async()=>({
+    number:34,state:'open',title:'[DeepDialogue] A museum of sound',comments:0,user:{login:'reader'},
+    body:DDL.community.format({kind:'Original prompt',parent:17,text:'An archive',question:'What survives?',script:'Listen to the room.'}).replaceAll('\n','\r\n')
+  })})};
+  for(const name of ['exchange','community'])vm.runInNewContext(readFileSync(file('app/'+name+'.js'),'utf8'),env);
+  DDL.community.render(root,'34');
+  await new Promise(setImmediate);
+  assert.match(element('[data-thread]').innerHTML,/#community\/17/);
+  element('[data-act=open]').click();
+  const draft=DDL.exchange.get(location.hash.split('/')[1]);
+  assert.equal(draft.parent,'34');
+  assert.equal(DDL.exchange.body(draft),'Listen to the room.');
+  DDL.exchange.detail(root,draft.id);
+  assert.equal(element('[data-copy-text]').value,'Listen to the room.');
+  assert.match(root.innerHTML,/#community\/34/);
+  element('[data-act=fork]').click();
+  assert.match(location.hash,/^workshop\/draft-/);
+});
