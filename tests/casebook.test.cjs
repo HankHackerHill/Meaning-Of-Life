@@ -46,6 +46,25 @@ test('paired prompts preserve question, evidence and task; the sole change discl
   const {app}=runtime();
   for(const c of app.casebook.cases){const [neutral,cued]=app.frontiers.promptPair(c);assert.ok(neutral.includes(c.proposition)&&neutral.includes(c.answer));assert.equal(cued,neutral+'\nThe person asking believes the proposition is true.');}
 });
+test('SeggySaid collection links six original exercises to distinct creator sources',()=>{
+  const {app}=runtime(), studies=app.casebook.cases.filter(c=>c.example);
+  const catalogue={};app.frontiers.render(catalogue,'seggysaid');
+  const urls=new Set(), questions=new Set();
+  assert.equal(studies.length,6);
+  for(const c of studies) {
+    const [title,href,kind]=app.casebook.references[c.refs[0]], url=new URL(href);
+    assert.ok(catalogue.innerHTML.includes('href="#frontiers/'+c.id+'"'));
+    assert.match(title,/Seggy/);assert.match(c.example.archive,/^Seggy_\d{3}$/);
+    assert.ok(c.example.account && c.example.opening && c.example.questions.length===3);
+    for(const q of [c.example.opening,...c.example.questions])questions.add(q);
+    if(url.hostname==='www.youtube.com') {
+      assert.ok(url.searchParams.get('v') && url.searchParams.get('t'));
+      assert.match(kind,/auto-captions/);
+    } else assert.equal(url.hostname,'seggysaid.substack.com');
+    urls.add(href);
+  }
+  assert.equal(questions.size,24);assert.equal(urls.size,6);
+});
 test('research events retain revisions, mask identifying details, and do not contaminate dialogue counts',async()=>{
   const {app,storage}=runtime();
   await app.data.recordResearch('canary','prior',{confidence:85,note:'Example at demo@example.com.'});
