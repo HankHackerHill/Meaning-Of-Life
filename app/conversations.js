@@ -252,5 +252,6 @@
     'interview-coder': ['Watts and colleagues on how participants described connectedness and acceptance', 'https://doi.org/10.1177/0022167817709585']
   };
   for (const entry of entries) entry.reading = readings[entry.id];
-  window.DDL.conversations = entries;
+  if (typeof module !== 'undefined' && module.exports) module.exports = entries;
+  else window.DDL.conversations = entries;
 })();
