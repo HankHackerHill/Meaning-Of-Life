@@ -15,6 +15,12 @@ python3 server.py
 
 Open **http://127.0.0.1:8765/#frontiers** for the casebook, or the root URL for the journey studio. Stop the server with Ctrl+C. A static host can serve `index.html` with the adjacent `app/` directory. Use HTTPS for the optional encrypted vault on a remote host.
 
+### Conversation prompts
+
+Open **Prompt library** in the app, or [read the complete prompt collection](CONVERSATIONS.md). The library includes 36 original guided conversations across 12 topics and the 12 earlier starters. Each guided conversation has an opening, three follow-ups and a question for the participant to put to an AI or a human partner. In a dialogue, expand **Turn the question around** to find it. With a local model enabled you can insert it into the composer, edit it and send it.
+
+The topics include human and AI psychology, purpose, psychedelics, altered perception, cosmology, patterns, identity, mental health and work, riddles, time, conspiracy theories, and ethics. Psychedelic research exercises use fictional examples and link to background reading. The riddle solutions unfold after the participant has had a chance to answer.
+
 ### Frontier casebook
 
 The edition reviewed on **2026-11-22** contains 27 cross-indexed cases. Record a judgment and its probability before revealing the working answer, sources, rival explanation and discriminating check. Add a reassessment or watch the question for its specified evidence trigger. The watchlist is a personal reading list. It performs no background subscriptions or polling.
@@ -52,7 +58,7 @@ Without a vault, entries stay in the current tab until refresh or close. The opt
 
 ```sh
 python3 -B -m unittest discover -s tests
-node --test tests/casebook.test.cjs
+node --test tests/*.test.cjs
 ```
 
 Backend tests use synthetic data and a mock inference endpoint. The casebook suite checks references, experiment controls, research record handling, and vault compatibility. Session counters and confidence ratings describe user activity and judgments. They have no validated psychological interpretation.
