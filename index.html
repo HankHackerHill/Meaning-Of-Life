@@ -4,9 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#183a36">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.github.com https://openrouter.ai; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
-  <meta name="description" content="A private workspace for Socratic dialogue, perspective taking, and the study of your own thinking.">
-  <title>Journey studio · DeepDialogue Lab</title>
+  <meta name="description" content="A library and workshop for master prompts, human–AI conversations, shared discoveries and community remixes.">
+  <title>Master prompt library · DeepDialogue Lab</title>
   <link rel="icon" type="image/svg+xml" href="./app/mark.svg">
   <link rel="stylesheet" href="./app/studio.css">
   <link rel="stylesheet" href="./app/records.css">
@@ -15,6 +16,11 @@
   <script defer src="./app/conversations.js"></script>
   <link rel="stylesheet" href="./app/frontiers.css">
   <script defer src="./app/casebook.js"></script>
+  <script defer src="./app/masters.js"></script>
+  <script defer src="./app/exchange.js"></script>
+  <script defer src="./app/community.js"></script>
+  <script defer src="./app/rooms.js"></script>
+  <link rel="stylesheet" href="./app/exchange.css">
   <script defer src="./app/frontiers.js"></script>
   <script defer src="./app/data.js"></script>
   <script defer src="./app/dialogue.js"></script>
@@ -23,7 +29,7 @@
   <a class="skip" href="#workspace">Skip to workspace</a>
   <div class="app-shell">
     <aside class="rail" id="rail" aria-label="Sidebar">
-      <a class="brand" href="#studio" aria-label="DeepDialogue Lab home"><img src="./app/mark.svg" width="39" height="39" alt=""><span>DeepDialogue<small>Research lab</small></span></a>
+      <a class="brand" href="#exchange" aria-label="DeepDialogue Lab home"><img src="./app/mark.svg" width="39" height="39" alt=""><span>DeepDialogue<small>Prompt exchange</small></span></a>
       <nav id="navigation" aria-label="Main navigation"></nav>
       <div class="rail-foot">
         <button type="button" class="privacy-shortcut" data-go="privacy"><span class="profile-mark" aria-hidden="true">P</span><span><b>Personal workspace</b><small id="privacy-mode">Private session</small></span><span class="nav-more" aria-hidden="true">···</span></button>
@@ -33,7 +39,7 @@
     <div class="main-column">
       <header class="topbar">
         <button type="button" id="mobile-nav" class="icon-button mobile-nav" aria-label="Open navigation" aria-controls="rail" aria-expanded="false"></button>
-        <div class="crumb"><span id="crumb-icon" aria-hidden="true"></span>Workspace<span aria-hidden="true">/</span><strong id="crumb-view">Journey studio</strong></div>
+        <div class="crumb"><span id="crumb-icon" aria-hidden="true"></span>Workspace<span aria-hidden="true">/</span><strong id="crumb-view">Master prompt library</strong></div>
         <div class="top-actions"><span class="top-date" id="top-date"></span><button type="button" class="icon-button" data-go="privacy" aria-label="Privacy and help" title="Privacy and help" id="help-icon"></button></div>
       </header>
       <main id="workspace" class="workspace" tabindex="-1"></main>

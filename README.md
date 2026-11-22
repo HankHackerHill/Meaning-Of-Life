@@ -3,7 +3,38 @@ A full mind expanding lab that has AI and humans pushing each other to lifes mos
 
 ## DeepDialogue Lab
 
-A private, local-first workspace for Socratic dialogue and evidence-based inquiry. Choose a 5-, 20-, or 45-minute journey, explore a case, change perspective, and review your reasoning in a journal. Guided mode needs no account, network connection after loading, or model.
+DeepDialogue Lab is a master prompt library and conversation commons. Browse 40 complete prompts, copy one into your preferred AI, remix it in the workshop, or open an in-site model conversation. The guided studio and private journal are available separately.
+
+### Master prompts and community
+
+The home page opens the master prompt collection. Four featured original scripts use a translation hearing, future archaeology, a telescope-time hearing and a pair of counterfactual letters. Another 36 scripts develop the earlier conversations into multi-turn investigations. Each includes an opening scene, a method, competing interpretations, questions the human can ask back and a concrete artifact to create together.
+
+Open **Prompt workshop** to write a new master or change an existing one. Preview and copy the entire result. Workshop drafts and API rooms live in the current tab. Copy a draft you want to keep before refreshing.
+
+In **Conversation commons**, contributors can publish an excerpt, share a complete remix, propose a discovery question or recruit collaborators. Open a thread to read replies, reply on GitHub, or build a related contribution. Remixes can retain a source prompt and parent issue number. The public feed reads matching open GitHub Issues in this repository. Writing and replying use the contributor’s own GitHub account. Moderators can close or lock issues on GitHub. Public reads are subject to GitHub rate limits and search indexing delays.
+
+The app opens a public post for review only after you select the content and approve the preview. Long posts use a copy-and-paste handoff to the GitHub editor. Nothing enters the public feed until a contributor publishes on GitHub. The private journal and the API room both support sharing selected turns.
+
+### AI connections
+
+**Browser API chat.** Open a master prompt, select **Talk here**, and connect your own OpenRouter account. Authorization uses S256 PKCE in a separate tab. Keep the initiating tab open. The returned key stays in memory and can be disconnected in the app or revoked at OpenRouter. The default model is `openrouter/free`; entering another model ID can consume credit. Each deliberate send includes the master prompt and up to 12 recent messages. Provider availability, routing and data handling depend on the account and model. Use an HTTPS site or localhost.
+
+**MCP.** Clients supporting MCP prompts over stdio can use this dependency-free Node.js 18+ server. Configure the absolute path to your checkout. Client configuration layouts vary.
+
+```json
+{
+  "mcpServers": {
+    "deepdialogue": {
+      "command": "node",
+      "args": ["/absolute/path/to/Meaning-Of-Life/mcp.cjs"]
+    }
+  }
+}
+```
+
+Use the client’s prompt picker, or call `prompts/list` and `prompts/get` with a name such as `last-translator`. The server exposes the same 40 public prompt texts as the website. Your MCP client supplies inference. The prompt server does not access accounts, journals or the network.
+
+**Local inference.** The Python server also supports the existing loopback model in the guided journey studio. See the local model section below.
 
 ### Run
 
@@ -13,7 +44,7 @@ From the extracted project folder, start the included Python 3.10+ standard-libr
 python3 server.py
 ```
 
-Open **http://127.0.0.1:8765/#frontiers** for the casebook, or the root URL for the journey studio. Stop the server with Ctrl+C. A static host can serve `index.html` with the adjacent `app/` directory. Use HTTPS for the optional encrypted vault on a remote host.
+Open **http://127.0.0.1:8765/#frontiers** for the casebook, or the root URL for master prompts. Use **Journey studio** for guided sessions. Stop the server with Ctrl+C. A static host can serve `index.html` with the adjacent `app/` directory. Use HTTPS for the optional encrypted vault on a remote host.
 
 ### Conversation prompts
 

@@ -23,7 +23,7 @@ MAX_BODY = 96 * 1024
 MAX_UPSTREAM = 192 * 1024
 CSP = (
     "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
-    "font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; "
+    "font-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://openrouter.ai; "
     "frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
 )
 
