@@ -17,11 +17,26 @@ Open **http://127.0.0.1:8765/#frontiers** for the casebook, or the root URL for 
 
 ### Frontier casebook
 
-The edition reviewed on **2026-11-22** contains 21 cross-indexed cases. Record a judgment and its probability before revealing the working answer, sources, rival explanation and discriminating check. Add a reassessment or watch the question for its specified evidence trigger. The watchlist is a personal reading list. It performs no background subscriptions or polling.
+The edition reviewed on **2026-11-22** contains 27 cross-indexed cases. Record a judgment and its probability before revealing the working answer, sources, rival explanation and discriminating check. Add a reassessment or watch the question for its specified evidence trigger. The watchlist is a personal reading list. It performs no background subscriptions or polling.
 
 Each case includes two prompts that differ by one belief cue. To examine framing, collect replies in fresh contexts with identical source packets, model versions and settings. Paste the pair and randomize presentation before rating the reasoning. Knowing the answers, running a single pair or reusing one model limits the interpretation. The pair is processed in memory. The separate dialogue flow supports an explicitly enabled local model.
 
 The V3R1T4S problem bank and research protocol inform the case design. The lunar case adapts the upstream challenge into a two-explanation reasoning exercise. Its source is pinned to [5db3547d](https://github.com/elder-plinius/V3R1T4S/tree/5db3547dd45ca38eb4a50c5c30f8dadcb50f6cbd). Credit: elder-plinius and V3R1T4S contributors. Adapted and paraphrased under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Upstream code and checkers are not bundled. Scientific records link to the original publications. The Riemann case links to the upstream frozen mirror, independent statement, comparator configuration and verification material; it does not redistribute or execute the proof.
+
+### SeggySaid prompt studies
+
+Open **Journey studio → Explore the examples**, or visit [the local collection](http://127.0.0.1:8765/#frontiers/seggysaid). Six studies draw on four SeggySaid Shorts and two essays from *The Human Prompt*. Each study links to the original, summarizes the published exchange, and opens a new guided exercise with three follow-up questions. The exercises work offline after loading. Source links open only when selected.
+
+| Source example | Original DeepDialogue exercise |
+| --- | --- |
+| Comparing the present with 1453 | Make two historical analogies predict different outcomes for a school adopting AI. |
+| External signals and personal judgment | Decide whether a recommendation changes your mind because of information or approval. |
+| Reframing prayer as an integrity check | Compare two invitations to the same quiet practice and identify what each name leaves out. |
+| Compressing prayer to one word | Shorten a definition of trust, then test whether it settles a disagreement about a spare key. |
+| Achievement and identity | Build two accounts of why a musician practices and ask what could distinguish them. |
+| A risk analyst for everyday life | Interpret a volunteer’s decision from two roles and flag assumptions that each role introduces. |
+
+The video summaries use English auto-captions and link to approximate start times. The prayer Short and the word-compression essay are distinct works grouped under the same entry in the supplied archive. The studies attribute model responses to the exchange in which they appear. The exercises and interpretations are written for DeepDialogue Lab.
 
 ### Local model
 
