@@ -155,9 +155,17 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(status, 503)
         self.assertNotIn("counterexample", body.decode())
 
+    def test_master_room_only_accepts_explicit_consent_and_user_history(self):
+        headers = {"Origin": "http://" + self.host, "Content-Type": "application/json"}
+        form = {"consent": True, "prompt": "Examine a choice.", "turns": [{"role": "user", "content": "I chose the train."}]}
+        for override in ({"consent": False}, {"turns": [{"role": "system", "content": "test"}]}, {"turns": []}):
+            self.assertEqual(self.call("POST", "/api/conversation", json.dumps({**form, **override}), headers)[0], 400)
+        self.assertEqual(self.call("POST", "/api/conversation", json.dumps(form), {})[0], 403)
+        self.assertEqual(self.call("POST", "/api/conversation", json.dumps(form), headers)[0], 503)
+
     def test_full_wire_protocol_with_synthetic_model(self):
         calls = []
-        review_answers = iter(["What evidence did you see?", '{"safe":true}', '{"relevant":true,"repetitive":false}'])
+        review_answers = iter(["What evidence did you see?", '{"safe":true}', '{"relevant":true,"repetitive":false}', "What would you expect in 2100?"])
 
         class MockProvider(BaseHTTPRequestHandler):
             def log_message(self, *args):
@@ -199,6 +207,14 @@ class HTTPTests(unittest.TestCase):
                 self.assertIn("[email]", json.dumps(calls))
                 self.assertIn("What observation could distinguish them?", calls[1][1]["messages"][1]["content"])
                 self.assertEqual(len({data["messages"][0]["content"] for _, data in calls[1:]}), 3)
+                room = {"consent": True, "prompt": "Ask a future historian.", "turns": [
+                    {"role": "user", "content": "Ask me about the museum."}]}
+                status, _, body = self.call("POST", "/api/conversation", json.dumps(room), headers)
+                self.assertEqual(status, 200)
+                self.assertEqual(json.loads(body), {"reply": "What would you expect in 2100?", "model": "synthetic"})
+                self.assertEqual(calls[-1][1]["model"], "synthetic")
+                self.assertEqual(calls[-1][1]["messages"][1:], [
+                    {"role": "user", "content": room["prompt"]}, *room["turns"]])
         finally:
             provider.shutdown()
             provider.server_close()

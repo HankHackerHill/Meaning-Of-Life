@@ -71,7 +71,9 @@ test('a local-model reversal leaves the next guided question available, includin
   reply('I value the criticism itself.');await tick();assert.equal(calls[0].nextQuestion,p.followups[0]);
   reply(p.askBack);await tick();assert.equal(calls[1].nextQuestion,undefined);
   reply('Perhaps the editor saw something I missed.');await tick();
-  assert.equal(calls[2].nextQuestion,p.followups[1]);assert.ok(root.innerHTML.includes(p.followups[1]));
-  reply('I would want a specific counterexample.');assert.ok(root.innerHTML.includes(p.followups[2]));
+  assert.equal(calls[2].nextQuestion,p.followups[1]);assert.ok(root.innerHTML.includes('did not return a reply'));
+  assert.ok(!root.innerHTML.includes(p.followups[1]));
+  node('.dg').onclick({target:{closest:()=>({dataset:{dg:'resume'}})}});
+  reply('I would want a specific counterexample.');assert.ok(root.innerHTML.includes(p.followups[1]));
   app.dialogue.reset();
 });
