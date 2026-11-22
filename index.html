@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#183a36">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="A private workspace for Socratic dialogue, perspective taking, and the study of your own thinking.">
+  <title>Journey studio · DeepDialogue Lab</title>
+  <link rel="icon" type="image/svg+xml" href="./app/mark.svg">
+  <link rel="stylesheet" href="./app/studio.css">
+  <link rel="stylesheet" href="./app/records.css">
+  <link rel="stylesheet" href="./app/dialogue.css">
+  <script defer src="./app/studio.js"></script>
+  <link rel="stylesheet" href="./app/frontiers.css">
+  <script defer src="./app/casebook.js"></script>
+  <script defer src="./app/frontiers.js"></script>
+  <script defer src="./app/data.js"></script>
+  <script defer src="./app/dialogue.js"></script>
+</head>
+<body>
+  <a class="skip" href="#workspace">Skip to workspace</a>
+  <div class="app-shell">
+    <aside class="rail" id="rail" aria-label="Sidebar">
+      <a class="brand" href="#studio" aria-label="DeepDialogue Lab home"><img src="./app/mark.svg" width="39" height="39" alt=""><span>DeepDialogue<small>Research lab</small></span></a>
+      <nav id="navigation" aria-label="Main navigation"></nav>
+      <div class="rail-foot">
+        <button type="button" class="privacy-shortcut" data-go="privacy"><span class="profile-mark" aria-hidden="true">P</span><span><b>Personal workspace</b><small id="privacy-mode">Private session</small></span><span class="nav-more" aria-hidden="true">···</span></button>
+      </div>
+    </aside>
+    <button id="scrim" class="scrim" aria-label="Close navigation" hidden></button>
+    <div class="main-column">
+      <header class="topbar">
+        <button type="button" id="mobile-nav" class="icon-button mobile-nav" aria-label="Open navigation" aria-controls="rail" aria-expanded="false"></button>
+        <div class="crumb"><span id="crumb-icon" aria-hidden="true"></span>Workspace<span aria-hidden="true">/</span><strong id="crumb-view">Journey studio</strong></div>
+        <div class="top-actions"><span class="top-date" id="top-date"></span><button type="button" class="icon-button" data-go="privacy" aria-label="Privacy and help" title="Privacy and help" id="help-icon"></button></div>
+      </header>
+      <main id="workspace" class="workspace" tabindex="-1"></main>
+      <footer class="app-foot"><span>DeepDialogue Lab</span><button type="button" data-go="privacy">AI limitations, privacy &amp; support</button></footer>
+    </div>
+  </div>
+  <dialog id="setup" class="setup-dialog" aria-labelledby="setup-title"></dialog>
+  <div id="toast" role="status" aria-live="polite" hidden></div>
+  <noscript><p>Enable JavaScript to use the private dialogue workspace.</p></noscript>
+</body>
+</html>
