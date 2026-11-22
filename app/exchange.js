@@ -12,6 +12,35 @@
   const btn=(label,action,kind='solid')=>'<button type="button" class="'+kind+'" data-act="'+action+'">'+esc(label)+'</button>';
   const link=(label,href,kind='text-link')=>'<a class="'+kind+'" href="'+esc(href)+'">'+esc(label)+'</a>';
   const intro=(label,title,description)=>'<div class="page-intro"><div><div class="overline"><i></i>'+esc(label)+'</div><h1>'+esc(title)+'</h1><p>'+esc(description)+'</p></div></div>';
+  const examples={
+    'last-translator':[
+      ['Participant','I’d print both translations in the same size. Nobody gets the last word.'],
+      ['AI','The granddaughter asks you to take her translation down. She told you what she heard in a private conversation. What happens to your two equal labels?'],
+      ['Participant','I confused giving her equal space with getting her permission. I’d ask whether she wants her words, her disagreement, or neither on the wall.'],
+      ['AI','She permits “the family disputes this translation.” Draft a label a visitor could read without assuming the whole family agrees.']
+    ],
+    'quiet-machine':[
+      ['Participant','If it remembered the afternoon my dog died without my reminding it, I’d start to believe it cared.'],
+      ['AI','Imagine two systems recall that afternoon word for word. One retrieves a diary entry. You know nothing about the other. Would you thank them differently?'],
+      ['Participant','I would thank both. The memory made me feel less alone. That tells me something about my afternoon, but less about theirs than I thought.'],
+      ['AI','What obligation, if any, would you give either system on the strength of that uncertainty? Now ask me what evidence would change my answer.']
+    ],
+    'silent-signal':[
+      ['Participant','I’d book the second telescope next Sunday. If it sees the signal too, I’d call a press conference.'],
+      ['AI','Suppose both telescopes run the same Sunday calibration. What would two detections establish?'],
+      ['Participant','That two instruments did something together. I’d ask the second team to change its schedule before I told them when our signal appears.'],
+      ['AI','They can move the calibration or change the patch of sky, but their shift is too short for both. Which comparison earns the night?']
+    ]
+  };
+  function exampleLinks(){
+    return '<section class="fb-panel"><h2>Inside a conversation</h2><p>Three fictional exchanges show how a person and an AI can change the direction of a question.</p><div class="mx-actions">'+
+      Object.keys(examples).map(id=>link(M.find(id).title,'#exchange/'+id,'filter')).join('')+'</div></section>';
+  }
+  function example(id){
+    if(!Object.hasOwn(examples,id))return '';
+    return '<details class="fb-panel mx-room"><summary>Read a fictional example conversation</summary>'+
+      examples[id].map(([role,text])=>'<blockquote><small>'+esc(role)+'</small><p>'+esc(text)+'</p></blockquote>').join('')+'</details>';
+  }
   async function copy(text,root){
     try{await navigator.clipboard.writeText(text);D.notify('Master prompt copied. Paste it into your AI to begin.');}
     catch{const box=root.querySelector('[data-copy-text]');box.closest('details')?.setAttribute('open','');box.focus();box.select();D.notify('Prompt selected. Use your device’s Copy command.');}
@@ -34,15 +63,18 @@
   function detail(root,id){
     const p=get(id);
     if(!p){root.innerHTML=intro('Collection','Prompt unavailable','A workshop draft lives in the tab where it was created.')+link('Browse master prompts','#exchange');return;}
+    const source=M.find(p.base||id);
     root.innerHTML=link('‹ Master prompt library','#exchange','fb-back')+intro(p.topic,p.title,p.method)+
       '<article class="fb-proposition"><small>Opening scene</small><p>'+esc(p.question||p.body.split('\n').find(Boolean))+'</p></article>'+
       '<div class="mx-actions">'+btn('Copy master prompt','copy')+link('Talk here','#room/'+p.id,'filter')+link('Remix this prompt','#workshop/'+p.id,'filter')+'</div>'+
       (p.artifact?'<div class="fb-panel"><h2>What you will make</h2><p>'+esc(p.artifact)+'</p></div>':'')+
       '<details class="fb-panel" open><summary>Complete master prompt</summary><textarea readonly aria-label="Complete master prompt" class="mx-text" data-copy-text></textarea></details>'+
-      '<div class="mx-heading"><h2>Take it further</h2>'+btn('Share a conversation','share','filter')+'</div>'+link('Read community conversations','#community');
+      example(id)+'<div class="mx-heading"><h2>Take it further</h2>'+btn(p.body?'Share this prompt':'Share a conversation','share','filter')+'</div><div class="mx-actions">'+
+      (p.parent?link('Read community thread #'+p.parent,'#community/'+p.parent,'filter'):'')+
+      (source?link('Conversations about this prompt','#community/prompt-'+source.id):link('Read community conversations','#community'))+'</div>';
     root.querySelector('[data-copy-text]').value=body(p);
     root.querySelector('[data-act=copy]').onclick=()=>copy(body(p),root);
-    root.querySelector('[data-act=share]').onclick=()=>D.community.compose({prompt:p,kind:p.body?'Prompt remix':'Conversation'});
+    root.querySelector('[data-act=share]').onclick=()=>D.community.compose({prompt:p,kind:p.body?(p.base||p.parent?'Prompt remix':'Original prompt'):'Conversation'});
   }
   function workshop(root,id){
     const p=get(id), raw=Boolean(p?.body), methods=[...new Map(M.catalogue.map(x=>[x.method,x])).values()];
@@ -80,5 +112,5 @@
       location.hash='exchange/'+draft.id;
     };
   }
-  D.exchange={home,detail,workshop,get,body,saveDraft,intro,link,btn,copy};
+  D.exchange={home,detail,workshop,get,body,saveDraft,intro,link,btn,copy,exampleLinks};
 })();
