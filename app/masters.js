@@ -43,12 +43,37 @@
       followups:['What would both future selves miss about today?','Which good in the rejected letter could still fit into the life you chose?','What small reversible experiment would teach you more than a third imagined future?'],
       artifact:'A letter back to both futures naming one value, one uncertainty and one small action the present self actually chooses.'}
   ];
-  const catalogue = [...signatures, ...conversations.map(p=>{
+  const originals = [...signatures, ...conversations.map(p=>{
     const [method,procedure,artifact]=techniques[p.topic];
     return {...p,method,procedure,artifact};
   })];
-  const find=id=>catalogue.find(item=>item.id===id);
+  const sizes=['short','medium','long'];
+  const editions=isNode?require('./editions.js'):(window.DDL.editions||{});
+  const legacy=new Map(originals.map(p=>[p.id,p]));
+  const catalogue=[];
+  const families=new Map();
+  for(const [topic,ideas] of Object.entries(editions)){
+    for(const idea of ideas){
+      const levels=sizes.filter(size=>Object.hasOwn(idea,size));
+      const family=levels.map(size=>{
+        const saved=size==='long'&&idea.long===null?legacy.get(idea.id):null;
+        const id=(size==='long'||levels.length===1)?idea.id:idea.id+'-'+size;
+        const script=idea[size];
+        const entry=saved?{...saved}:{id,title:idea.title,topic,script,
+          question:script.split(/(?<=[?!.])\s/)[0],method:'Conversation prompt'};
+        return {...entry,size,family:idea.id,sources:idea.sources||[],fiction:topic==='Fiction & storytelling'};
+      });
+      families.set(idea.id,family);
+      catalogue.push(...family);
+    }
+  }
+  // A visitor can briefly have an older HTML entry point during a rolling static deployment.
+  if(!catalogue.length)catalogue.push(...originals.map(p=>({...p,size:'long',family:p.id})));
+  const indexed=new Map(catalogue.map(p=>[p.id,p]));
+  const find=id=>indexed.get(id);
+  const related=p=>families.get(p?.family)||[];
   function render(p) {
+    if(p.script)return p.script;
     const sections=[
       p.title,
       'Run a one-to-one conversation using '+p.method+'. I will be the participant. Take seriously both my experience and the possibility that my interpretation is mistaken.',
@@ -62,6 +87,6 @@
     if(p.reading)sections.push('Optional background reading\n'+p.reading.join('\n')+' Describe its findings only if you can inspect the source.');
     return sections.join('\n\n');
   }
-  const api={catalogue,find,render};
+  const api={catalogue,find,render,related,sizes};
   if(isNode)module.exports=api;else window.DDL.masters=api;
 })();

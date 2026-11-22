@@ -284,15 +284,15 @@
       const sourceNames=new Map(sources().map(source=>[source.id,source.title]));
       const chosen=new Set();
       s.turns.forEach((t,index) => {
-        const item=node('article','rec-turn',h('small','', (['user','human'].includes(t.role.toLowerCase()) ? 'You' : t.role)+' · '+(t.tag || 'Dialogue')+(t.lens?' · '+t.lens:'')),h('p','',t.text));
+        const item=node('article','rec-turn',h('small','', (['user','human'].includes(t.role.toLowerCase()) ? 'You' : t.tag==='model'?'Local AI':'Workbook')+' · '+(t.tag || 'Dialogue')+(t.lens?' · '+t.lens:'')),h('p','',t.text));
         if(t.sourceIds?.length)item.append(h('small','','Referenced: '+t.sourceIds.map(id=>sourceNames.get(id) || 'Unavailable source').join(' · ')));
         const check=h('input');check.type='checkbox';check.addEventListener('change',()=>{if(check.checked)chosen.add(index);else chosen.delete(index);});
         item.append(node('label','rec-meta',check,h('span','',' Include in public draft')));
         transcript.append(item);
       });
       transcript.append(button('Review selected excerpt',()=>{
-        const excerpt=s.turns.filter((_,i)=>chosen.has(i)).map(t=>(['user','human'].includes(t.role.toLowerCase())?'Participant':'Facilitator')+': '+t.text).join('\n\n');
-        if(!excerpt || excerpt.length>3500){notify('Choose one or more turns totaling at most 3,500 characters.');return;}
+        const excerpt=s.turns.filter((_,i)=>chosen.has(i)).map(t=>(['user','human'].includes(t.role.toLowerCase())?'Participant':t.tag==='model'?'Local AI':'Workbook')+': '+t.text).join('\n\n');
+        if(!excerpt || excerpt.length>48000){notify('Choose one or more turns totaling at most 48,000 characters.');return;}
         DDL.community.compose({text:mask(excerpt)});
       },true));
       if (s.reflection) transcript.append(h('h3','','Closing reflection'),h('p','rec-pre',s.reflection));

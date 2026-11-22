@@ -56,8 +56,8 @@
   function startPrompt(prompt) {
     setup({...prompt, minutes:20, lens:'Socratic'});
   }
-  const names={exchange:"Master prompts",workshop:"Prompt workshop",community:"Conversation commons",connections:"AI connections",room:"AI conversation",frontiers:"Frontier casebook",studio:"Journey studio",prompts:"Prompt library",dialogue:"Dialogue",journal:"Session journal",insights:"Practice insights",evidence:"Evidence archive",experiments:"Experiments",privacy:"Privacy & support"};
-  const navGroups=[["Prompt exchange",[["exchange","book"],["workshop","feather"],["community","message"],["connections","layers"]]],["Workspace",[["studio","studio"],["prompts","feather"],["journal","journal"]]],["Research tools",[["frontiers","compass"],["evidence","book"],["insights","chart"],["experiments","flask"]]]];
+  const names={exchange:"Master prompts",fiction:"Fiction studio",workshop:"Prompt workshop",community:"Conversation commons",connections:"AI connections",room:"AI conversation",frontiers:"Frontier casebook",studio:"Journey studio",prompts:"Prompt library",dialogue:"Dialogue",journal:"Session journal",insights:"Practice insights",evidence:"Evidence archive",experiments:"Experiments",privacy:"Privacy & support"};
+  const navGroups=[["Prompt exchange",[["exchange","book"],["fiction","feather"],["workshop","feather"],["community","message"],["connections","layers"]]],["Workspace",[["studio","studio"],["prompts","feather"],["journal","journal"]]],["Research tools",[["frontiers","compass"],["evidence","book"],["insights","chart"],["experiments","flask"]]]];
   let selectedJourney=null, setupTrigger=null, currentView="", toastTimer, dayTimer;
 
   function notice(message) {
@@ -91,7 +91,7 @@
     currentView=view; closeRail(); byId("crumb-view").textContent=names[view];
     document.title=names[view]+" · DeepDialogue Lab"; refreshNav();
     root.replaceChildren(); root.dataset.view=view;
-    if(view==="exchange") item?DDL.exchange.detail(root,item):DDL.exchange.home(root);
+    if(view==="exchange"||view==="fiction") item?DDL.exchange.detail(root,item):DDL.exchange.home(root,view==="fiction");
     else if(view==="workshop") DDL.exchange.workshop(root,item);
     else if(view==="community") DDL.community.render(root,item);
     else if(view==="connections") DDL.rooms.connections(root);

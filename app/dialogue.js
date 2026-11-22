@@ -291,8 +291,8 @@
     } catch (_) {
       if (pending !== request || session !== current || generation !== marker) return;
       session.consent = false;
-      session.connectionNotice = 'The model was unavailable. This session is continuing with on-device guided prompts.';
-      turn('assistant',offlineReply(input),'prompt',{lens:session.lens});
+      session.connectionNotice = 'The local model did not return a reply.';
+      enterPause('Choose Resume to continue with written workbook questions, or finish here.');
     } finally {
       clearTimeout(timeout);
       if (pending === request) {
@@ -347,7 +347,7 @@
     return '<button type="button" class="dg-btn ' + (kind || '') + '" data-dg="' + action + '" ' + (extra || '') + '>' + text + '</button>';
   }
   function notice() {
-    return '<aside class="dg-notice"><strong>About this facilitator</strong><p>Guided prompts and AI responses are tools for reflection. The AI has no feelings or awareness. For health decisions, contact a qualified professional. In immediate danger, contact local emergency services.</p>' + btn('Privacy & safety','privacy','dg-link') + '</aside>';
+    return '<aside class="dg-notice"><strong>About this facilitator</strong><p>Workbook questions are written exercises. Only turns labeled Local AI come from your connected model. The AI has no feelings or awareness. For health decisions, contact a qualified professional. In immediate danger, contact local emergency services.</p>' + btn('Privacy & safety','privacy','dg-link') + '</aside>';
   }
   function head(kicker,title,description) {
     return '<header class="dg-head"><p class="dg-eyebrow">' + esc(kicker) + '</p><h1>' + esc(title) + '</h1>' + (description ? '<p>' + esc(description) + '</p>' : '') + '</header>';
@@ -356,7 +356,7 @@
     const sources = safeSourceList();
     return '<ol class="dg-thread" aria-label="Session transcript">' + current.turns.map(t => {
       const refs = (t.sourceIds || []).map(id => sources.find(s => s.id === id)).filter(Boolean);
-      return '<li class="dg-turn dg-' + (t.role === 'user' ? 'human' : t.tag === 'break' ? 'breaker' : 'guide') + '"><div class="dg-byline"><strong>' + (t.role === 'user' ? 'You' : 'Facilitator') + '</strong><span>' + esc(tagText[t.tag] || t.tag) + (t.lens && t.role === 'assistant' ? ' · ' + esc(t.lens) : '') + '</span></div><p>' + esc(t.text) + '</p>' + refs.map(s => '<small class="dg-source-ref">' + esc(s.status) + ' · ' + esc(s.title) + '</small>').join('') + '</li>';
+      return '<li class="dg-turn dg-' + (t.role === 'user' ? 'human' : t.tag === 'break' ? 'breaker' : 'guide') + '"><div class="dg-byline"><strong>' + (t.role === 'user' ? 'You' : t.tag === 'model' ? 'Local AI' : 'Workbook') + '</strong><span>' + esc(tagText[t.tag] || t.tag) + (t.lens && t.role === 'assistant' ? ' · ' + esc(t.lens) : '') + '</span></div><p>' + esc(t.text) + '</p>' + refs.map(s => '<small class="dg-source-ref">' + esc(s.status) + ' · ' + esc(s.title) + '</small>').join('') + '</li>';
     }).join('') + '</ol>';
   }
   function reverseQuestion() {

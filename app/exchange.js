@@ -2,7 +2,8 @@
   'use strict';
   const D=window.DDL, M=D.masters, esc=D.escape;
   const drafts=new Map();
-  let serial=0, term='', topic='';
+  let serial=0;
+  const searches=new Map();
   function get(id){return M.find(id)||drafts.get(id);}
   function saveDraft(title,text,base,parent){
     const draft={id:'draft-'+(++serial),title,body:text,base,parent,topic:'Workshop',method:'Community remix'};
@@ -32,52 +33,121 @@
       ['AI','They can move the calibration or change the patch of sky, but their shift is too short for both. Which comparison earns the night?']
     ]
   };
-  function exampleLinks(){
-    return '<section class="fb-panel"><h2>Inside a conversation</h2><p>Three fictional exchanges show how a person and an AI can change the direction of a question.</p><div class="mx-actions">'+
-      Object.keys(examples).map(id=>link(M.find(id).title,'#exchange/'+id,'filter')).join('')+'</div></section>';
+  function writingExamples(){
+    return '<section class="fb-panel"><h2>Dialogue studies for writers</h2><p>These three scripted scenes illustrate how a character can change their mind.</p>'+
+      Object.keys(examples).map(id=>example(id)).join('')+'</section>';
   }
   function example(id){
     if(!Object.hasOwn(examples,id))return '';
-    return '<details class="fb-panel mx-room"><summary>Read a fictional example conversation</summary>'+
+    return '<details class="fb-panel mx-room"><summary>'+esc(M.find(id).title)+' · fictional dialogue</summary>'+
       examples[id].map(([role,text])=>'<blockquote><small>'+esc(role)+'</small><p>'+esc(text)+'</p></blockquote>').join('')+'</details>';
   }
   async function copy(text,root){
     try{await navigator.clipboard.writeText(text);D.notify('Master prompt copied. Paste it into your AI to begin.');}
     catch{const box=root.querySelector('[data-copy-text]');box.closest('details')?.setAttribute('open','');box.focus();box.select();D.notify('Prompt selected. Use your device’s Copy command.');}
   }
-  function card(p){return '<a class="mx-card" href="#exchange/'+p.id+'"><small>'+esc(p.topic)+'</small><strong>'+esc(p.title)+'</strong><span>'+esc(p.method)+' '+D.icon('arrow',15)+'</span></a>';}
-  function home(root){
-    const featured=M.catalogue[0], topics=[...new Set(M.catalogue.map(p=>p.topic))].sort();
-    root.innerHTML=intro('DeepDialogue Lab','Master prompt library','Copy a complete prompt into your AI, or open it here and take the other side of the conversation.')+
-      '<article class="hero mx-hero"><div class="hero-art" aria-hidden="true"></div><div class="hero-content"><div class="hero-label">Featured master prompt</div><h2>'+esc(featured.title)+'</h2><p>One farewell. Two translations. Which one goes on the museum wall?</p>'+link('Explore the prompt','#exchange/'+featured.id,'hero-button')+'</div></article>'+
+  const nameOf=size=>size?size[0].toUpperCase()+size.slice(1):'';
+  const route=p=>'#'+(p.fiction?'fiction':'exchange')+'/'+p.id;
+  const choices={
+    stance:['Stance',{'Candid assessment':'Give your best-supported assessment, including evidence against it. In a forecast, give the time horizon, your uncertainty and a sign that would change your mind.','Skeptical':'Test my strongest claim against an alternative that could actually explain the same evidence.','Collaborative':'Develop my idea with me, and name a condition that would make us abandon it.'}],
+    voice:['Voice',{'Plainspoken friend':'Use the plain speech of a thoughtful friend.','Scientist':'Speak as a scientist explaining the limits of an inference.','Philosopher':'Use a concrete counterexample to examine a philosophical claim.','Interviewer':'Listen closely and follow up on my actual words.','Storyteller':'Use clearly marked imagined scenes when they help me explore an idea.','Mix voices':'Change voice when useful and tell me when you change perspective.'}],
+    challenge:['Challenge',{'Intellectual':'Make me defend a prediction or distinguish competing explanations.','Emotional':'Invite me to explore a value or a cost I may find difficult. Let me pass.','Both':'Test my reasoning and invite me to name what a change of mind would cost me. Let me pass.'}],
+    opening:['First move',{'AI answers first':'Commit to your own provisional answer before asking for mine.','Ask me first':'Ask me one opening question and wait before giving your view.'}],
+    perspective:['Perspective',{'My experience':'Let me choose how much of my own experience to share.','Third person':'Offer a clearly identified hypothetical character facing a recognizable human problem.'}],
+    ending:['Ending',{'One memorable line':'When I say I am satisfied, close with one specific line worth thinking about and leave it there.'}]
+  };
+  const preferences={};
+  let includeSources=false;
+  function configured(p){
+    const instructions=Object.entries(choices).map(([key,[,options]])=>options[preferences[key]]).filter(Boolean);
+    if(includeSources&&p.sources?.length)instructions.push('Source material\n'+p.sources.map(s=>s.label+' — '+s.url).join('\n'));
+    return [body(p),...instructions].join('\n\n');
+  }
+  function settings(){
+    return '<details class="fb-panel mx-prefs"><summary>Choose how your AI responds</summary><div class="mx-pref-grid">'+
+      Object.entries(choices).map(([key,[label,options]])=>'<label>'+label+'<select data-setting="'+key+'"><option value="">As written</option>'+
+        Object.keys(options).map(value=>'<option '+(preferences[key]===value?'selected':'')+'>'+esc(value)+'</option>').join('')+'</select></label>').join('')+
+      '</div><label><input type="checkbox" data-include-sources '+(includeSources?'checked':'')+'> Include available source links in the prompt</label><p>Choices apply to copied prompts and live rooms in this tab.</p></details>';
+  }
+  function bindSettings(root,onChange){
+    const sources=root.querySelector('[data-include-sources]');
+    if(sources)sources.onchange=()=>{includeSources=sources.checked;onChange?.();};
+    root.querySelectorAll('[data-setting]').forEach(field=>field.onchange=()=>{
+      preferences[field.dataset.setting]=field.value;onChange?.();
+    });
+  }
+  function card(p){
+    return '<a class="mx-card" href="'+route(p)+'"><small>'+esc(p.topic)+' · '+nameOf(p.size)+'</small><strong>'+esc(p.title)+'</strong>'+
+      '<span class="mx-excerpt">'+esc(p.question)+'</span></a>';
+  }
+  function home(root,fiction=false){
+    const scope=fiction?'fiction':'exchange', collection=M.catalogue.filter(p=>Boolean(p.fiction)===fiction);
+    if(!searches.has(scope))searches.set(scope,{term:'',topic:'',size:'',limit:24});
+    const groups=new Map();
+    for(const p of collection){if(!groups.has(p.topic))groups.set(p.topic,[]);groups.get(p.topic).push(p);}
+    const pools=[...groups.values()];
+    const browse=[];
+    for(let i=0;i<Math.max(0,...pools.map(group=>group.length));i++){for(const group of pools)if(group[i])browse.push(group[i]);}
+    const state=searches.get(scope), topics=[...new Set(collection.map(p=>p.topic))].sort();
+    const feature=M.find('hindsight-2100-short')||M.find('last-translator');
+    root.innerHTML=intro(fiction?'Writing studio':'DeepDialogue Lab',fiction?'Fiction & storytelling':'Master prompt library',
+      fiction?'Develop an invented scene, a character’s choice or a story that can surprise its author.':'Find a question, choose its length, and take it to your AI.')+
+      (fiction?'':'<article class="hero mx-hero"><div class="hero-art" aria-hidden="true"></div><div class="hero-content"><div class="hero-label">Featured conversation</div><h2>What will seem obvious in 2100?</h2><p>Give a future historian one piece of evidence you can see today.</p>'+link('Try the short prompt',route(feature),'hero-button')+'</div></article>')+
       '<div class="mx-heading"><h2>Explore the collection</h2>'+link('Build a master prompt','#workshop')+'</div>'+
-      '<div class="mx-filters"><label class="search-box">'+D.icon('search')+'<input type="search" aria-label="Search master prompts" placeholder="Search master prompts" value="'+esc(term)+'"></label><select aria-label="Filter by topic"><option value="">All topics</option>'+topics.map(t=>'<option '+(t===topic?'selected':'')+'>'+esc(t)+'</option>').join('')+'</select></div><p class="fb-count" role="status"></p><div class="mx-grid"></div>';
-    function update(){
-      const items=M.catalogue.filter(p=>(!topic||p.topic===topic)&&[p.title,p.topic,p.method,p.question].join(' ').toLowerCase().includes(term.trim().toLowerCase()));
-      root.querySelector('.fb-count').textContent=items.length+' master prompt'+(items.length===1?'':'s');
-      root.querySelector('.mx-grid').innerHTML=items.map(card).join('')||'<p>No matches. Try a broader topic.</p>';
+      '<div class="mx-filters"><label class="search-box">'+D.icon('search')+'<input type="search" aria-label="Search master prompts" placeholder="Search master prompts" value="'+esc(state.term)+'"></label>'+
+      (fiction?'':'<select aria-label="Filter by topic" data-topic><option value="">All topics</option>'+topics.map(t=>'<option '+(t===state.topic?'selected':'')+'>'+esc(t)+'</option>').join('')+'</select>')+
+      '<select aria-label="Filter by length" data-size><option value="">Any length</option>'+M.sizes.map(size=>'<option value="'+size+'" '+(state.size===size?'selected':'')+'>'+nameOf(size)+'</option>').join('')+'</select></div>'+
+      '<p class="fb-count" role="status"></p><div class="mx-grid"></div><div class="mx-actions" data-more></div>';
+    if(fiction)root.insertAdjacentHTML('beforeend',writingExamples());
+    const update=()=>{
+      const term=state.term.trim().toLowerCase();
+      const matches=browse.filter(p=>(!state.topic||p.topic===state.topic)&&(!state.size||p.size===state.size)&&
+        (!term||[p.title,p.topic,p.method,M.render(p)].join(' ').toLowerCase().includes(term)));
+      const visible=matches.slice(0,state.limit);
+      root.querySelector('.fb-count').textContent=matches.length+' prompt'+(matches.length===1?'':'s')+(visible.length<matches.length?' · Showing '+visible.length:'');
+      root.querySelector('.mx-grid').innerHTML=visible.map(card).join('')||'<p>No prompts match these filters.</p>';
+      const more=root.querySelector('[data-more]');
+      more.innerHTML=visible.length<matches.length?btn('Show more prompts','more','filter'):'';
+      if(more.firstElementChild)more.firstElementChild.onclick=()=>{state.limit+=24;update();};
+    };
+    for(const [selector,key] of [['input','term'],['[data-topic]','topic'],['[data-size]','size']]){
+      const input=root.querySelector(selector);
+      if(input)input[key==='term'?'oninput':'onchange']=()=>{state[key]=input.value;state.limit=24;update();};
     }
-    root.querySelector('input').oninput=e=>{term=e.target.value;update();};
-    root.querySelector('select').onchange=e=>{topic=e.target.value;update();};update();
+    update();
   }
   function detail(root,id){
     const p=get(id);
     if(!p){root.innerHTML=intro('Collection','Prompt unavailable','A workshop draft lives in the tab where it was created.')+link('Browse master prompts','#exchange');return;}
-    const source=M.find(p.base||id);
-    root.innerHTML=link('‹ Master prompt library','#exchange','fb-back')+intro(p.topic,p.title,p.method)+
-      '<article class="fb-proposition"><small>Opening scene</small><p>'+esc(p.question||p.body.split('\n').find(Boolean))+'</p></article>'+
+    const source=M.find(p.base||id),family=M.related(p), isDraft=Boolean(p.body);
+    const plain=body(p);
+    const related=family.length>1?'<nav aria-label="Other lengths" class="mx-actions">'+family.map(q=>q.id===p.id?'<strong aria-current="page">'+nameOf(q.size)+'</strong>':link(nameOf(q.size),route(q),'filter')).join('')+'</nav>':'';
+    const references=(p.sources||[]).filter(s=>/^https:\/\//.test(s.url)).map(s=>'<a class="text-link" target="_blank" rel="noopener noreferrer" href="'+esc(s.url)+'">'+esc(s.label)+'</a>');
+    root.innerHTML=link(p.fiction?'‹ Fiction & storytelling':'‹ Master prompt library',p.fiction?'#fiction':'#exchange','fb-back')+intro(p.topic,p.title,p.size?nameOf(p.size)+' prompt · '+plain.trim().split(/\s+/).length+' words':p.method)+related+
       '<div class="mx-actions">'+btn('Copy master prompt','copy')+link('Talk here','#room/'+p.id,'filter')+link('Remix this prompt','#workshop/'+p.id,'filter')+'</div>'+
+      settings()+'<section class="fb-panel"><h2>Complete master prompt</h2><textarea readonly aria-label="Complete master prompt" class="mx-text mx-'+(p.size||'long')+'" data-copy-text></textarea></section>'+
+      (references.length?'<section class="fb-panel"><h2>Source material</h2><div class="mx-actions">'+references.join('')+'</div></section>':'')+
+      (p.family==='hindsight-2100'?'<p>Inspired by a community recollection of a SeggySaid conversation. This is an original prompt.</p>':'')+
       (p.artifact?'<div class="fb-panel"><h2>What you will make</h2><p>'+esc(p.artifact)+'</p></div>':'')+
-      '<details class="fb-panel" open><summary>Complete master prompt</summary><textarea readonly aria-label="Complete master prompt" class="mx-text" data-copy-text></textarea></details>'+
-      example(id)+'<div class="mx-heading"><h2>Take it further</h2>'+btn(p.body?'Share this prompt':'Share a conversation','share','filter')+'</div><div class="mx-actions">'+
+      (family.length>1?'<details class="fb-panel mx-room"><summary>Continue from an answer in another AI</summary><label>Your earlier answer<textarea data-earlier maxlength="8000" rows="3"></textarea></label>'+btn('Copy continuation','continue','filter')+'<textarea aria-label="Continuation for manual copying" data-manual hidden readonly></textarea></details>':'')+
+      '<div class="mx-heading"><h2>Take it further</h2>'+btn(isDraft?'Share this prompt':'Share a conversation','share','filter')+'</div><div class="mx-actions">'+
       (p.parent?link('Read community thread #'+p.parent,'#community/'+p.parent,'filter'):'')+
       (source?link('Conversations about this prompt','#community/prompt-'+source.id):link('Read community conversations','#community'))+'</div>';
-    root.querySelector('[data-copy-text]').value=body(p);
-    root.querySelector('[data-act=copy]').onclick=()=>copy(body(p),root);
-    root.querySelector('[data-act=share]').onclick=()=>D.community.compose({prompt:p,kind:p.body?(p.base||p.parent?'Prompt remix':'Original prompt'):'Conversation'});
+    const box=root.querySelector('[data-copy-text]');
+    const sync=()=>box.value=configured(p);
+    sync();bindSettings(root,sync);
+    root.querySelector('[data-act=copy]').onclick=()=>copy(configured(p),root);
+    if(family.length>1)root.querySelector('[data-act=continue]').onclick=async()=>{
+      const answer=root.querySelector('[data-earlier]').value.trim();
+      if(!answer){D.notify('Enter the answer you want to carry forward.');return;}
+      const next=configured(p)+'\n\nContinue from my earlier answer below. Ask the next relevant question without restarting.\n\n'+answer;
+      try{await navigator.clipboard.writeText(next);D.notify('Continuation copied.');}
+      catch{const t=root.querySelector('[data-manual]');t.hidden=false;t.value=next;t.focus();t.select();}
+    };
+    root.querySelector('[data-act=share]').onclick=()=>D.community.compose({prompt:p,kind:isDraft?(p.base||p.parent?'Prompt remix':'Original prompt'):'Conversation'});
   }
   function workshop(root,id){
-    const p=get(id), raw=Boolean(p?.body), methods=[...new Map(M.catalogue.map(x=>[x.method,x])).values()];
+    const p=get(id), raw=Boolean(p?.body||p?.script), methods=[...new Map(M.catalogue.filter(x=>x.procedure).map(x=>[x.method,x])).values()];
     const formField=(label,name,limit,rows=0,required=true)=>'<label>'+esc(label)+(rows?'<textarea name="'+name+'" rows="'+rows+'"':'<input name="'+name+'"')+' maxlength="'+limit+'" '+(required?'required':'')+'>'+(rows?'</textarea>':'')+'</label>';
     root.innerHTML=intro('Prompt workshop',p?'Remix a master prompt':'Build a master prompt','Give the conversation a specific scene, a competing interpretation and something worth making together.')+
       '<form class="fb-panel mx-form">'+formField('Prompt title','title',100)+
@@ -88,7 +158,7 @@
       '<button class="solid">Preview master prompt</button></form>';
     const form=root.querySelector('form'), f=form.elements;
     f.title.value=p?(p.title+' · remix').slice(0,100):'';
-    if(raw){f.script.value=p.body;}
+    if(raw){f.script.value=body(p);}
     else{
       const source=p||M.find('quiet-machine');
       f.opening.value=p?.question||'';f.method.value=source.method;f.procedure.value=source.procedure;
@@ -112,5 +182,5 @@
       location.hash='exchange/'+draft.id;
     };
   }
-  D.exchange={home,detail,workshop,get,body,saveDraft,intro,link,btn,copy,exampleLinks};
+  D.exchange={home,detail,workshop,get,body,saveDraft,intro,link,btn,copy,settings,bindSettings,configured,route};
 })();
