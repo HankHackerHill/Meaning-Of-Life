@@ -56,7 +56,7 @@ class InputTests(unittest.TestCase):
     def test_consent_role_and_length_rules(self):
         self.assertEqual(parse_payload(request_payload(topic="A belief"))["question"], "A belief")
         for overrides in (
-            {"consent": "true"}, {"consent": 1}, {"turns": []}, {"title": "a" * 501},
+            {"consent": "true"}, {"consent": 1}, {"turns": []}, {"title": "a" * 501}, {"nextQuestion": "a" * 501},
             {"turns": [{"role": "system", "text": "hello"}]},
             {"turns": [{"role": "assistant", "text": "hello"}]},
             {"turns": [{"role": "user", "text": "a" * 1601}]},
@@ -190,13 +190,14 @@ class HTTPTests(unittest.TestCase):
                 self.assertEqual(status, 200)
                 self.assertTrue(json.loads(body)["available"])
                 headers = {"Origin": "http://" + self.host, "Content-Type": "application/json"}
-                form = request_payload(turns=[{"role": "user", "text": "A note from learner@example.invalid."}])
+                form = request_payload(nextQuestion="What observation could distinguish them?", turns=[{"role": "user", "text": "A note from learner@example.invalid."}])
                 status, _, body = self.call("POST", "/api/dialogue", json.dumps(form), headers)
                 self.assertEqual(status, 200)
                 self.assertEqual(json.loads(body), {"reply": "What evidence did you see?", "signals": []})
                 self.assertEqual([path for path, _ in calls], ["/v1/models"] + ["/v1/chat/completions"] * 3)
                 self.assertNotIn("learner@example.invalid", json.dumps(calls))
                 self.assertIn("[email]", json.dumps(calls))
+                self.assertIn("What observation could distinguish them?", calls[1][1]["messages"][1]["content"])
                 self.assertEqual(len({data["messages"][0]["content"] for _, data in calls[1:]}), 3)
         finally:
             provider.shutdown()
